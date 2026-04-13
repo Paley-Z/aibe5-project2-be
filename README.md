@@ -71,7 +71,7 @@
 - React (별도 개발)
 
 ### Backend
-- Java 17
+- Java 21
 - Spring Boot
 - Spring Web
 - Spring Security
