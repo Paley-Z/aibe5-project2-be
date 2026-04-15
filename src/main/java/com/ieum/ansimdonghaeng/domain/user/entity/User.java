@@ -38,6 +38,13 @@ public class User extends BaseAuditEntity {
     @Column(name = "ACTIVE_YN", nullable = false)
     private Boolean activeYn;
 
+    @Builder.Default
+    @Column(name = "PROVIDER_CODE", nullable = false, length = 20)
+    private String providerCode = AuthProvider.LOCAL.getCode();
+
+    @Column(name = "PROVIDER_USER_ID", length = 100)
+    private String providerUserId;
+
     public void updateProfile(String name, String phone, String intro) {
         this.name = name;
         this.phone = phone;
