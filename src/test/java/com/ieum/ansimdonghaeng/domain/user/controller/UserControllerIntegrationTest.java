@@ -3,6 +3,8 @@ package com.ieum.ansimdonghaeng.domain.user.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ieum.ansimdonghaeng.common.jwt.JwtTokenProvider;
 import com.ieum.ansimdonghaeng.domain.auth.repository.RefreshTokenRepository;
+import com.ieum.ansimdonghaeng.domain.freelancer.repository.FreelancerProfileRepository;
+import com.ieum.ansimdonghaeng.domain.proposal.repository.ProposalRepository;
 import com.ieum.ansimdonghaeng.domain.user.dto.request.UserProfileUpdateRequest;
 import com.ieum.ansimdonghaeng.domain.user.entity.User;
 import com.ieum.ansimdonghaeng.domain.user.repository.UserRepository;
@@ -40,6 +42,12 @@ class UserControllerIntegrationTest {
     private UserRepository userRepository;
 
     @Autowired
+    private FreelancerProfileRepository freelancerProfileRepository;
+
+    @Autowired
+    private ProposalRepository proposalRepository;
+
+    @Autowired
     private RefreshTokenRepository refreshTokenRepository;
 
     @Autowired
@@ -50,6 +58,9 @@ class UserControllerIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        // 제안 -> 프리랜서 프로필 -> 사용자 순서로 FK를 따라 정리한다.
+        proposalRepository.deleteAll();
+        freelancerProfileRepository.deleteAll();
         refreshTokenRepository.deleteAll();
         userRepository.deleteAll();
     }

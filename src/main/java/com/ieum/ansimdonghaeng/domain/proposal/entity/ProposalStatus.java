@@ -1,8 +1,9 @@
 package com.ieum.ansimdonghaeng.domain.proposal.entity;
 
 public enum ProposalStatus {
-    SUBMITTED,
+    PENDING,
     ACCEPTED,
     REJECTED,
-    CANCELED
+    EXPIRED,
+    CANCELLED
 }

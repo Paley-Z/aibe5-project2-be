@@ -38,11 +38,11 @@ public class Project extends BaseAuditEntity {
     @Column(name = "TITLE", nullable = false, length = 200)
     private String title;
 
-    // TODO: 공통 code domain 정리 후 FK 또는 enum 연동을 검토한다.
+    // TODO: 공통 코드 도메인이 정리되면 FK나 enum 연동을 검토한다.
     @Column(name = "PROJECT_TYPE_CODE", nullable = false, length = 30)
     private String projectTypeCode;
 
-    // TODO: 공통 code domain 정리 후 FK 또는 enum 연동을 검토한다.
+    // TODO: 공통 코드 도메인이 정리되면 FK나 enum 연동을 검토한다.
     @Column(name = "SERVICE_REGION_CODE", nullable = false, length = 20)
     private String serviceRegionCode;
 
@@ -58,7 +58,7 @@ public class Project extends BaseAuditEntity {
     @Column(name = "SERVICE_DETAIL_ADDRESS", length = 300)
     private String serviceDetailAddress;
 
-    // Oracle 실스키마는 요청 상세를 CLOB로 관리한다.
+    // Oracle 스키마에서 요청 상세는 CLOB으로 관리한다.
     @Lob
     @Basic(fetch = FetchType.LAZY)
     @Column(name = "REQUEST_DETAIL", nullable = false)
@@ -80,7 +80,7 @@ public class Project extends BaseAuditEntity {
     @Column(name = "CANCELLED_AT")
     private LocalDateTime cancelledAt;
 
-    // Oracle 실스키마는 취소 사유를 CLOB로 관리한다.
+    // Oracle 스키마에서 취소 사유도 CLOB으로 관리한다.
     @Lob
     @Basic(fetch = FetchType.LAZY)
     @Column(name = "CANCELLED_REASON")
@@ -143,7 +143,7 @@ public class Project extends BaseAuditEntity {
                 .build();
     }
 
-    // ownerUserId scalar를 사용해 현재 로그인 사용자와 소유권을 비교한다.
+    // ownerUserId scalar로 현재 로그인 사용자의 소유권을 비교한다.
     public boolean isOwnedBy(Long currentUserId) {
         return Objects.equals(ownerUserId, currentUserId);
     }
@@ -152,7 +152,15 @@ public class Project extends BaseAuditEntity {
         return status == ProjectStatus.REQUESTED;
     }
 
-    // 부분 수정 검증은 서비스에서 끝내고, 엔티티는 최종 반영값만 갱신한다.
+    public boolean isAcceptedStatus() {
+        return status == ProjectStatus.ACCEPTED;
+    }
+
+    public boolean isInProgressStatus() {
+        return status == ProjectStatus.IN_PROGRESS;
+    }
+
+    // 수정은 서비스에서 검증을 끝낸 뒤 최종 반영값만 엔티티에 반영한다.
     public void update(String title,
                        String projectTypeCode,
                        String serviceRegionCode,
@@ -171,7 +179,25 @@ public class Project extends BaseAuditEntity {
         this.requestDetail = requestDetail;
     }
 
-    // 취소 시각과 취소 사유를 함께 남겨 이후 상태 추적이 가능하도록 한다.
+    // 제안이 수락되면 프로젝트 상태를 ACCEPTED로 바꾸고 수락 시각을 남긴다.
+    public void accept(LocalDateTime acceptedAt) {
+        this.status = ProjectStatus.ACCEPTED;
+        this.acceptedAt = acceptedAt;
+    }
+
+    // 서비스 시작 시점에는 진행 중 상태와 시작 시각을 함께 남긴다.
+    public void start(LocalDateTime startedAt) {
+        this.status = ProjectStatus.IN_PROGRESS;
+        this.startedAt = startedAt;
+    }
+
+    // 서비스 완료 시점에는 완료 상태와 완료 시각을 함께 남긴다.
+    public void complete(LocalDateTime completedAt) {
+        this.status = ProjectStatus.COMPLETED;
+        this.completedAt = completedAt;
+    }
+
+    // 취소 시점과 취소 사유를 함께 저장해 이후 상태 추적이 가능하도록 한다.
     public void cancel(String reason, LocalDateTime cancelledAt) {
         this.status = ProjectStatus.CANCELLED;
         this.cancelledReason = reason;
