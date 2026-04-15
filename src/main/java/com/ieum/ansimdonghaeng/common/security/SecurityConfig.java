@@ -37,7 +37,11 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/signup", "/api/v1/auth/refresh").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/users/*/public-profile").permitAll()
+                        .requestMatchers("/api/v1/admin/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers("/api/v1/freelancers/me/**").hasAnyAuthority("ROLE_FREELANCER", "ROLE_ADMIN")
+                        .requestMatchers("/api/v1/users/me/**").authenticated()
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers(webSocketProperties.getEndpoint(), webSocketProperties.getEndpoint() + "/**")

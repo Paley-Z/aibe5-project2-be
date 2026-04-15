@@ -1,10 +1,14 @@
 -- 프로젝트 API Oracle 수동 검증용 최소 참조 데이터 시드
+-- 로그인 검증이 추가되었으므로 테스트 사용자 비밀번호는 BCrypt 해시를 사용한다.
+-- 테스트 로그인 계정
+--   - project-user1@example.com / 1234
+--   - project-user2@example.com / 1234
 
 MERGE INTO APP_USER target
 USING (
     SELECT 1 AS USER_ID,
            'project-user1@example.com' AS EMAIL,
-           'bootstrap-password' AS PASSWORD_HASH,
+           '$2a$10$XR2dJVZj4SK2uMkrMsT/S.sjYGIUuZ0gfRXcKHG4yCgE18lmR92Om' AS PASSWORD_HASH,
            '프로젝트 테스트 사용자1' AS NAME,
            '01000000001' AS PHONE,
            'ROLE_USER' AS ROLE_CODE,
@@ -31,7 +35,7 @@ MERGE INTO APP_USER target
 USING (
     SELECT 2 AS USER_ID,
            'project-user2@example.com' AS EMAIL,
-           'bootstrap-password' AS PASSWORD_HASH,
+           '$2a$10$XR2dJVZj4SK2uMkrMsT/S.sjYGIUuZ0gfRXcKHG4yCgE18lmR92Om' AS PASSWORD_HASH,
            '프로젝트 테스트 사용자2' AS NAME,
            '01000000002' AS PHONE,
            'ROLE_USER' AS ROLE_CODE,

@@ -1,7 +1,10 @@
 package com.ieum.ansimdonghaeng.common.security;
 
-import com.ieum.ansimdonghaeng.domain.user.entity.UserRole;
+import com.ieum.ansimdonghaeng.domain.user.entity.User;
+import com.ieum.ansimdonghaeng.domain.user.repository.UserRepository;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -10,7 +13,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 @Service
+@RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
+
+    private final UserRepository userRepository;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -18,25 +24,20 @@ public class CustomUserDetailsService implements UserDetailsService {
             throw new UsernameNotFoundException("Username must not be blank.");
         }
 
-        return CustomUserDetails.builder()
-                // TODO: 공통 user 도메인이 준비되면 실제 사용자 PK 조회로 교체한다.
-                .userId(resolveBootstrapUserId(username))
-                .username(username)
-                .password("{noop}bootstrap-password")
-                .authorities(List.of(new SimpleGrantedAuthority(UserRole.USER.asAuthority())))
-                .enabled(true)
-                .build();
-    }
+        User user = userRepository.findByEmail(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found. email=" + username));
 
-    // auth 스켈레톤 단계에서는 username 기준의 안정적인 임시 userId를 사용한다.
-    private Long resolveBootstrapUserId(String username) {
-        if (username.chars().allMatch(Character::isDigit)) {
-            try {
-                return Long.parseLong(username);
-            } catch (NumberFormatException ignored) {
-                // 숫자 파싱이 불가능하면 아래 해시 기반 fallback을 사용한다.
-            }
+        if (Boolean.FALSE.equals(user.getActiveYn())) {
+            throw new DisabledException("User is inactive. email=" + username);
         }
-        return Integer.toUnsignedLong(username.hashCode());
+
+        return CustomUserDetails.builder()
+                // 프로젝트 owner 검증에서 현재 로그인 사용자 PK를 그대로 사용한다.
+                .userId(user.getId())
+                .username(user.getEmail())
+                .password(user.getPasswordHash())
+                .authorities(List.of(new SimpleGrantedAuthority(user.getRole().getCode())))
+                .enabled(Boolean.TRUE.equals(user.getActiveYn()))
+                .build();
     }
 }
