@@ -13,6 +13,7 @@ import com.ieum.ansimdonghaeng.common.security.CustomUserDetails;
 import com.ieum.ansimdonghaeng.domain.project.entity.Project;
 import com.ieum.ansimdonghaeng.domain.project.entity.ProjectStatus;
 import com.ieum.ansimdonghaeng.domain.project.repository.ProjectRepository;
+import com.ieum.ansimdonghaeng.domain.proposal.repository.ProposalRepository;
 import com.ieum.ansimdonghaeng.domain.user.entity.UserRole;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -43,8 +44,13 @@ class ProjectControllerIntegrationTest {
     @Autowired
     private ProjectRepository projectRepository;
 
+    @Autowired
+    private ProposalRepository proposalRepository;
+
     @AfterEach
     void tearDown() {
+        // 제안이 프로젝트를 참조하므로 자식 테이블부터 정리한다.
+        proposalRepository.deleteAll();
         projectRepository.deleteAll();
     }
 
