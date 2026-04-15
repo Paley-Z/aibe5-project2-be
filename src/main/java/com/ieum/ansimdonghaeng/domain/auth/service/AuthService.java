@@ -6,11 +6,15 @@ import com.ieum.ansimdonghaeng.common.jwt.JwtTokenProvider;
 import com.ieum.ansimdonghaeng.domain.auth.dto.request.AuthLoginRequest;
 import com.ieum.ansimdonghaeng.domain.auth.dto.request.AuthRefreshRequest;
 import com.ieum.ansimdonghaeng.domain.auth.dto.request.AuthSignupRequest;
+import com.ieum.ansimdonghaeng.domain.auth.dto.request.KakaoOAuthLoginRequest;
 import com.ieum.ansimdonghaeng.domain.auth.dto.response.AuthSignupResponse;
 import com.ieum.ansimdonghaeng.domain.auth.dto.response.AuthTokenResponse;
 import com.ieum.ansimdonghaeng.domain.auth.dto.response.AuthUserResponse;
+import com.ieum.ansimdonghaeng.domain.auth.dto.response.KakaoUserInfo;
 import com.ieum.ansimdonghaeng.domain.auth.entity.RefreshToken;
+import com.ieum.ansimdonghaeng.domain.auth.oauth.KakaoOAuthClient;
 import com.ieum.ansimdonghaeng.domain.auth.repository.RefreshTokenRepository;
+import com.ieum.ansimdonghaeng.domain.user.entity.AuthProvider;
 import com.ieum.ansimdonghaeng.domain.user.entity.User;
 import com.ieum.ansimdonghaeng.domain.user.entity.UserRole;
 import com.ieum.ansimdonghaeng.domain.user.repository.UserRepository;
@@ -32,6 +36,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
+    private final KakaoOAuthClient kakaoOAuthClient;
 
     @Transactional
     public AuthTokenResponse issueToken(AuthLoginRequest request) {
@@ -89,6 +94,20 @@ public class AuthService {
     }
 
     @Transactional
+    public AuthTokenResponse kakaoLogin(KakaoOAuthLoginRequest request) {
+        KakaoUserInfo kakaoUserInfo = kakaoOAuthClient.getUserInfo(request.accessToken());
+
+        User user = userRepository.findByProviderCodeAndProviderUserId(AuthProvider.KAKAO.getCode(), kakaoUserInfo.providerId())
+                .orElseGet(() -> createKakaoUser(kakaoUserInfo));
+
+        if (Boolean.FALSE.equals(user.getActiveYn())) {
+            throw new CustomException(ErrorCode.USER_INACTIVE);
+        }
+
+        return issueTokensForUser(user);
+    }
+
+    @Transactional
     public void logout(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND, "User was not found."));
@@ -120,5 +139,24 @@ public class AuthService {
                 jwtTokenProvider.getRefreshTokenExpirationSeconds(),
                 new AuthUserResponse(user.getId(), user.getEmail(), user.getName(), user.getRole().getCode())
         );
+    }
+
+    private User createKakaoUser(KakaoUserInfo kakaoUserInfo) {
+        userRepository.findByEmail(kakaoUserInfo.email())
+                .ifPresent(user -> {
+                    throw new CustomException(ErrorCode.OAUTH_ACCOUNT_CONFLICT);
+                });
+
+        User user = User.builder()
+                .email(kakaoUserInfo.email())
+                .passwordHash(passwordEncoder.encode(AuthProvider.KAKAO.getCode() + ":" + kakaoUserInfo.providerId()))
+                .name(kakaoUserInfo.nickname())
+                .roleCode(UserRole.USER.getCode())
+                .activeYn(true)
+                .providerCode(AuthProvider.KAKAO.getCode())
+                .providerUserId(kakaoUserInfo.providerId())
+                .build();
+
+        return userRepository.save(user);
     }
 }

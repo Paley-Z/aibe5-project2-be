@@ -4,6 +4,7 @@ import com.ieum.ansimdonghaeng.common.response.ApiResponse;
 import com.ieum.ansimdonghaeng.domain.auth.dto.request.AuthLoginRequest;
 import com.ieum.ansimdonghaeng.domain.auth.dto.request.AuthRefreshRequest;
 import com.ieum.ansimdonghaeng.domain.auth.dto.request.AuthSignupRequest;
+import com.ieum.ansimdonghaeng.domain.auth.dto.request.KakaoOAuthLoginRequest;
 import com.ieum.ansimdonghaeng.domain.auth.dto.response.AuthSignupResponse;
 import com.ieum.ansimdonghaeng.domain.auth.dto.response.AuthTokenResponse;
 import com.ieum.ansimdonghaeng.domain.auth.service.AuthService;
@@ -37,6 +38,11 @@ public class AuthController {
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse<AuthSignupResponse>> signup(@Valid @RequestBody AuthSignupRequest request) {
         return ResponseEntity.ok(ApiResponse.success(authService.signup(request)));
+    }
+
+    @PostMapping("/oauth/kakao")
+    public ResponseEntity<ApiResponse<AuthTokenResponse>> kakaoLogin(@Valid @RequestBody KakaoOAuthLoginRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(authService.kakaoLogin(request)));
     }
 
     @PreAuthorize("isAuthenticated()")
