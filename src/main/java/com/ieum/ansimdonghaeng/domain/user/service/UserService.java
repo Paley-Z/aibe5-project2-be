@@ -43,7 +43,7 @@ public class UserService {
     }
 
     private User getActiveUserByEmail(String email) {
-        User user = userRepository.findByEmail(email)
+        User user = userRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND, "User was not found."));
 
         if (Boolean.FALSE.equals(user.getActiveYn())) {

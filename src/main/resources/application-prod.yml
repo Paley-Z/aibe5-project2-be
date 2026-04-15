@@ -10,7 +10,7 @@ spring:
     show-sql: false
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.OracleDialect
+        dialect: org.hibernate.community.dialect.OracleLegacyDialect
         format_sql: false
         jdbc:
           time_zone: Asia/Seoul

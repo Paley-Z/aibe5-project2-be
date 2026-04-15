@@ -4,12 +4,18 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ieum.ansimdonghaeng.common.exception.CustomException;
 import com.ieum.ansimdonghaeng.common.exception.ErrorCode;
 import com.ieum.ansimdonghaeng.domain.auth.dto.response.KakaoUserInfo;
+import io.netty.channel.ChannelOption;
+import java.time.Duration;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.netty.http.client.HttpClient;
 
 @Component
 @RequiredArgsConstructor
@@ -21,15 +27,36 @@ public class KakaoOAuthWebClient implements KakaoOAuthClient {
     @Override
     public KakaoUserInfo getUserInfo(String accessToken) {
         try {
-            KakaoUserResponse response = webClientBuilder.build()
+            KakaoUserResponse response = webClientBuilder
+                    .clientConnector(new ReactorClientHttpConnector(HttpClient.create()
+                            .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, kakaoOAuthProperties.getConnectTimeoutMillis())
+                            .responseTimeout(Duration.ofMillis(kakaoOAuthProperties.getResponseTimeoutMillis()))))
+                    .build()
                     .get()
                     .uri(kakaoOAuthProperties.getUserInfoUri())
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                     .retrieve()
+                    .onStatus(HttpStatusCode::is4xxClientError, clientResponse ->
+                            clientResponse.createException()
+                                    .map(exception -> new CustomException(
+                                            ErrorCode.OAUTH_PROVIDER_ERROR,
+                                            "Kakao OAuth rejected the access token."
+                                    )))
+                    .onStatus(HttpStatusCode::is5xxServerError, clientResponse ->
+                            clientResponse.createException()
+                                    .map(exception -> new CustomException(
+                                            ErrorCode.OAUTH_PROVIDER_ERROR,
+                                            "Kakao OAuth provider is temporarily unavailable."
+                                    )))
                     .bodyToMono(KakaoUserResponse.class)
+                    .timeout(Duration.ofMillis(kakaoOAuthProperties.getResponseTimeoutMillis()))
                     .block();
 
             return toUserInfo(response);
+        } catch (CustomException exception) {
+            throw exception;
+        } catch (WebClientRequestException exception) {
+            throw new CustomException(ErrorCode.OAUTH_PROVIDER_ERROR, "Failed to connect to Kakao OAuth provider.");
         } catch (WebClientResponseException exception) {
             throw new CustomException(ErrorCode.OAUTH_PROVIDER_ERROR, "Failed to retrieve Kakao user information.");
         }

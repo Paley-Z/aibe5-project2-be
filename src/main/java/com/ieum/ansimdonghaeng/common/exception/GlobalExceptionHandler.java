@@ -10,6 +10,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.BindException;
@@ -100,11 +101,21 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({
             BadCredentialsException.class,
+            DisabledException.class,
             UsernameNotFoundException.class,
             AuthenticationCredentialsNotFoundException.class
     })
     public ResponseEntity<ApiResponse<Void>> handleAuthenticationException(Exception exception,
                                                                            HttpServletRequest request) {
+        if (exception instanceof DisabledException) {
+            ErrorResponse inactiveUserResponse = ErrorResponse.of(
+                    ErrorCode.USER_INACTIVE,
+                    ErrorCode.USER_INACTIVE.getMessage(),
+                    request.getRequestURI()
+            );
+            return ResponseEntity.status(ErrorCode.USER_INACTIVE.getStatus()).body(ApiResponse.error(inactiveUserResponse));
+        }
+
         ErrorResponse errorResponse = ErrorResponse.of(
                 ErrorCode.INVALID_CREDENTIALS,
                 ErrorCode.INVALID_CREDENTIALS.getMessage(),

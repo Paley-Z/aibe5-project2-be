@@ -1,7 +1,6 @@
 package com.ieum.ansimdonghaeng.domain.auth.service;
 
 import com.ieum.ansimdonghaeng.domain.auth.dto.request.AuthLoginRequest;
-import com.ieum.ansimdonghaeng.domain.auth.repository.RefreshTokenRepository;
 import com.ieum.ansimdonghaeng.domain.auth.dto.response.AuthTokenResponse;
 import com.ieum.ansimdonghaeng.domain.freelancer.repository.FreelancerProfileRepository;
 import com.ieum.ansimdonghaeng.domain.project.repository.ProjectRepository;
@@ -29,9 +28,6 @@ class AuthServiceTest {
     private UserRepository userRepository;
 
     @Autowired
-    private RefreshTokenRepository refreshTokenRepository;
-
-    @Autowired
     private ProposalRepository proposalRepository;
 
     @Autowired
@@ -48,7 +44,6 @@ class AuthServiceTest {
         proposalRepository.deleteAll();
         projectRepository.deleteAll();
         freelancerProfileRepository.deleteAll();
-        refreshTokenRepository.deleteAll();
         userRepository.deleteAll();
     }
 

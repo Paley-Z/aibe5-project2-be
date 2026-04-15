@@ -2,6 +2,7 @@ package com.ieum.ansimdonghaeng.common.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ieum.ansimdonghaeng.common.exception.ErrorCode;
+import com.ieum.ansimdonghaeng.common.jwt.JwtAuthenticationFilter;
 import com.ieum.ansimdonghaeng.common.response.ApiResponse;
 import com.ieum.ansimdonghaeng.common.response.ErrorResponse;
 import jakarta.servlet.ServletException;
@@ -24,7 +25,11 @@ public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
     public void commence(HttpServletRequest request,
                          HttpServletResponse response,
                          AuthenticationException authException) throws IOException, ServletException {
-        writeErrorResponse(response, request, ErrorCode.UNAUTHORIZED);
+        Object securityErrorCode = request.getAttribute(JwtAuthenticationFilter.AUTH_ERROR_CODE_ATTRIBUTE);
+        ErrorCode errorCode = securityErrorCode instanceof ErrorCode resolvedErrorCode
+                ? resolvedErrorCode
+                : ErrorCode.UNAUTHORIZED;
+        writeErrorResponse(response, request, errorCode);
     }
 
     private void writeErrorResponse(HttpServletResponse response,

@@ -20,5 +20,12 @@ logging:
     org.hibernate.SQL: info
 
 app:
+  jwt:
+    secret: test-only-jwt-secret-for-ansimdonghaeng-1234567890
+    issuer: ansimdonghaeng
+    access-token-expiration-minutes: 60
+    refresh-token-expiration-minutes: 10080
+    header: Authorization
+    prefix: Bearer
   file-storage:
     base-dir: ${FILE_STORAGE_BASE_DIR:./target/test-storage}

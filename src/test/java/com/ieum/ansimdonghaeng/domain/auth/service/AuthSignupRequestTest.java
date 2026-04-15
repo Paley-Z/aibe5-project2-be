@@ -43,7 +43,7 @@ class AuthServiceSignupTest {
 
         AuthSignupResponse response = authService.signup(request);
 
-        Optional<User> savedUser = userRepository.findByEmail("signup@test.com");
+        Optional<User> savedUser = userRepository.findByEmailIgnoreCase("signup@test.com");
 
         assertThat(response.email()).isEqualTo("signup@test.com");
         assertThat(response.roleCode()).isEqualTo("ROLE_USER");

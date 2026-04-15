@@ -18,7 +18,7 @@ public class OpenApiConfig {
                 .info(new Info()
                         .title(applicationName)
                         .version("v1")
-                        .description("Ansimdonghaeng backend REST API bootstrap"))
+                        .description("Ansimdonghaeng backend REST API"))
                 .components(new Components()
                         .addSecuritySchemes("bearerAuth", new SecurityScheme()
                                 .type(SecurityScheme.Type.HTTP)

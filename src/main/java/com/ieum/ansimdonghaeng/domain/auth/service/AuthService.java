@@ -11,20 +11,20 @@ import com.ieum.ansimdonghaeng.domain.auth.dto.response.AuthSignupResponse;
 import com.ieum.ansimdonghaeng.domain.auth.dto.response.AuthTokenResponse;
 import com.ieum.ansimdonghaeng.domain.auth.dto.response.AuthUserResponse;
 import com.ieum.ansimdonghaeng.domain.auth.dto.response.KakaoUserInfo;
-import com.ieum.ansimdonghaeng.domain.auth.entity.RefreshToken;
 import com.ieum.ansimdonghaeng.domain.auth.oauth.KakaoOAuthClient;
-import com.ieum.ansimdonghaeng.domain.auth.repository.RefreshTokenRepository;
 import com.ieum.ansimdonghaeng.domain.user.entity.AuthProvider;
 import com.ieum.ansimdonghaeng.domain.user.entity.User;
 import com.ieum.ansimdonghaeng.domain.user.entity.UserRole;
 import com.ieum.ansimdonghaeng.domain.user.repository.UserRepository;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -34,19 +34,19 @@ public class AuthService {
 
     private final JwtTokenProvider jwtTokenProvider;
     private final UserRepository userRepository;
-    private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final KakaoOAuthClient kakaoOAuthClient;
 
     @Transactional
     public AuthTokenResponse issueToken(AuthLoginRequest request) {
-        User user = userRepository.findByEmail(request.username())
+        User user = userRepository.findByEmailIgnoreCase(normalizeEmail(request.email()))
                 .orElseThrow(() -> new BadCredentialsException(ErrorCode.INVALID_CREDENTIALS.getMessage()));
 
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
             throw new BadCredentialsException(ErrorCode.INVALID_CREDENTIALS.getMessage());
         }
 
+        validateActiveUser(user);
         return issueTokensForUser(user);
     }
 
@@ -59,28 +59,22 @@ public class AuthService {
         }
 
         String email = jwtTokenProvider.getUsername(refreshTokenValue);
-        User user = userRepository.findByEmail(email)
+        User user = userRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new CustomException(ErrorCode.INVALID_REFRESH_TOKEN));
 
-        RefreshToken savedRefreshToken = refreshTokenRepository.findByUser(user)
-                .orElseThrow(() -> new CustomException(ErrorCode.INVALID_REFRESH_TOKEN));
-
-        if (!savedRefreshToken.getTokenValue().equals(refreshTokenValue) || savedRefreshToken.isExpired(LocalDateTime.now())) {
-            refreshTokenRepository.delete(savedRefreshToken);
-            throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
-        }
-
+        validateActiveUser(user);
         return issueTokensForUser(user);
     }
 
     @Transactional
     public AuthSignupResponse signup(AuthSignupRequest request) {
-        if (userRepository.existsByEmail(request.email())) {
+        String normalizedEmail = normalizeEmail(request.email());
+        if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
             throw new CustomException(ErrorCode.DUPLICATE_EMAIL);
         }
 
         User user = User.builder()
-                .email(request.email())
+                .email(normalizedEmail)
                 .passwordHash(passwordEncoder.encode(request.password()))
                 .name(request.name())
                 .phone(request.phone())
@@ -96,22 +90,19 @@ public class AuthService {
     @Transactional
     public AuthTokenResponse kakaoLogin(KakaoOAuthLoginRequest request) {
         KakaoUserInfo kakaoUserInfo = kakaoOAuthClient.getUserInfo(request.accessToken());
+        String normalizedEmail = normalizeEmail(kakaoUserInfo.email());
 
-        User user = userRepository.findByProviderCodeAndProviderUserId(AuthProvider.KAKAO.getCode(), kakaoUserInfo.providerId())
+        User user = userRepository.findByEmailIgnoreCase(normalizedEmail)
                 .orElseGet(() -> createKakaoUser(kakaoUserInfo));
 
-        if (Boolean.FALSE.equals(user.getActiveYn())) {
-            throw new CustomException(ErrorCode.USER_INACTIVE);
-        }
-
+        validateActiveUser(user);
         return issueTokensForUser(user);
     }
 
     @Transactional
     public void logout(String email) {
-        User user = userRepository.findByEmail(email)
+        userRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND, "User was not found."));
-        refreshTokenRepository.deleteByUser(user);
     }
 
     private AuthTokenResponse issueTokensForUser(User user) {
@@ -119,17 +110,6 @@ public class AuthService {
 
         String accessToken = jwtTokenProvider.generateAccessToken(user.getEmail(), authorities);
         String refreshTokenValue = jwtTokenProvider.generateRefreshToken(user.getEmail(), authorities);
-        LocalDateTime refreshExpiresAt = LocalDateTime.now().plusSeconds(jwtTokenProvider.getRefreshTokenExpirationSeconds());
-
-        refreshTokenRepository.findByUser(user)
-                .ifPresentOrElse(
-                        refreshToken -> refreshToken.rotate(refreshTokenValue, refreshExpiresAt),
-                        () -> refreshTokenRepository.save(RefreshToken.builder()
-                                .user(user)
-                                .tokenValue(refreshTokenValue)
-                                .expiresAt(refreshExpiresAt)
-                                .build())
-                );
 
         return new AuthTokenResponse(
                 "Bearer",
@@ -142,21 +122,28 @@ public class AuthService {
     }
 
     private User createKakaoUser(KakaoUserInfo kakaoUserInfo) {
-        userRepository.findByEmail(kakaoUserInfo.email())
-                .ifPresent(user -> {
-                    throw new CustomException(ErrorCode.OAUTH_ACCOUNT_CONFLICT);
-                });
-
+        String normalizedEmail = normalizeEmail(kakaoUserInfo.email());
         User user = User.builder()
-                .email(kakaoUserInfo.email())
+                .email(normalizedEmail)
                 .passwordHash(passwordEncoder.encode(AuthProvider.KAKAO.getCode() + ":" + kakaoUserInfo.providerId()))
                 .name(kakaoUserInfo.nickname())
                 .roleCode(UserRole.USER.getCode())
                 .activeYn(true)
-                .providerCode(AuthProvider.KAKAO.getCode())
-                .providerUserId(kakaoUserInfo.providerId())
                 .build();
 
         return userRepository.save(user);
+    }
+
+    private void validateActiveUser(User user) {
+        if (Boolean.FALSE.equals(user.getActiveYn())) {
+            throw new CustomException(ErrorCode.USER_INACTIVE);
+        }
+    }
+
+    private String normalizeEmail(String email) {
+        if (!StringUtils.hasText(email)) {
+            return email;
+        }
+        return email.trim().toLowerCase(Locale.ROOT);
     }
 }

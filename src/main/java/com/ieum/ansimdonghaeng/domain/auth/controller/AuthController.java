@@ -30,7 +30,7 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success(authService.issueToken(request)));
     }
 
-    @PostMapping("/refresh")
+    @PostMapping({"/refresh", "/reissue"})
     public ResponseEntity<ApiResponse<AuthTokenResponse>> refresh(@Valid @RequestBody AuthRefreshRequest request) {
         return ResponseEntity.ok(ApiResponse.success(authService.refresh(request)));
     }

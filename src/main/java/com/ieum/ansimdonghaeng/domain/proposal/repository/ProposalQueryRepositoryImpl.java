@@ -1,86 +1,57 @@
 package com.ieum.ansimdonghaeng.domain.proposal.repository;
 
-import com.ieum.ansimdonghaeng.domain.proposal.entity.Proposal;
+import static com.ieum.ansimdonghaeng.domain.project.entity.QProject.project;
+import static com.ieum.ansimdonghaeng.domain.proposal.entity.QProposal.proposal;
+
 import com.ieum.ansimdonghaeng.domain.proposal.entity.ProposalStatus;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
-import jakarta.persistence.Query;
+import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 @Repository
+@RequiredArgsConstructor
 public class ProposalQueryRepositoryImpl implements ProposalQueryRepository {
 
-    private static final String PROPOSAL_COLUMNS = """
-            p.PROPOSAL_ID,
-            p.PROJECT_ID,
-            p.FREELANCER_PROFILE_ID,
-            p.STATUS_CODE,
-            p.MESSAGE,
-            p.RESPONDED_AT,
-            p.CREATED_AT,
-            p.UPDATED_AT
-            """;
-
-    @PersistenceContext
-    private EntityManager entityManager;
+    private final JPAQueryFactory queryFactory;
 
     @Override
-    public Page<Proposal> findFreelancerProposals(Long freelancerProfileId, ProposalStatus status, Pageable pageable) {
-        String whereClause = buildWhereClause(status);
-        String contentQuery = """
-                SELECT
-                    PROPOSAL_ID,
-                    PROJECT_ID,
-                    FREELANCER_PROFILE_ID,
-                    STATUS_CODE,
-                    MESSAGE,
-                    RESPONDED_AT,
-                    CREATED_AT,
-                    UPDATED_AT
-                FROM (
-                    SELECT
-                """ + PROPOSAL_COLUMNS + """
-                        ,
-                        ROW_NUMBER() OVER (ORDER BY p.CREATED_AT DESC) AS rn
-                    FROM PROPOSAL p
-                """ + whereClause + """
-                )
-                WHERE rn > :offsetRow
-                  AND rn <= :endRow
-                ORDER BY rn
-                """;
+    public Page<ProposalSummaryView> findFreelancerProposals(Long freelancerProfileId, ProposalStatus status, Pageable pageable) {
+        BooleanExpression statusCondition = status == null ? null : proposal.status.eq(status);
 
-        Query query = entityManager.createNativeQuery(contentQuery, Proposal.class);
-        bindParameters(query, freelancerProfileId, status);
-        query.setParameter("offsetRow", pageable.getOffset());
-        query.setParameter("endRow", pageable.getOffset() + pageable.getPageSize());
+        List<ProposalSummaryView> content = queryFactory
+                .select(Projections.constructor(
+                        ProposalSummaryView.class,
+                        proposal.id,
+                        project.id,
+                        project.title,
+                        project.ownerUserId,
+                        proposal.status,
+                        project.status,
+                        proposal.message,
+                        proposal.respondedAt,
+                        proposal.createdAt,
+                        proposal.updatedAt
+                ))
+                .from(proposal)
+                .join(proposal.project, project)
+                .where(proposal.freelancerProfile.id.eq(freelancerProfileId), statusCondition)
+                .orderBy(proposal.createdAt.desc(), proposal.id.desc())
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
 
-        @SuppressWarnings("unchecked")
-        List<Proposal> content = query.getResultList();
+        Long total = queryFactory
+                .select(proposal.count())
+                .from(proposal)
+                .where(proposal.freelancerProfile.id.eq(freelancerProfileId), statusCondition)
+                .fetchOne();
 
-        String countQuery = "SELECT COUNT(*) FROM PROPOSAL p " + whereClause;
-        Query totalQuery = entityManager.createNativeQuery(countQuery);
-        bindParameters(totalQuery, freelancerProfileId, status);
-        long total = ((Number) totalQuery.getSingleResult()).longValue();
-
-        return new PageImpl<>(content, pageable, total);
-    }
-
-    private String buildWhereClause(ProposalStatus status) {
-        if (status == null) {
-            return " WHERE p.FREELANCER_PROFILE_ID = :freelancerProfileId ";
-        }
-        return " WHERE p.FREELANCER_PROFILE_ID = :freelancerProfileId AND p.STATUS_CODE = :status ";
-    }
-
-    private void bindParameters(Query query, Long freelancerProfileId, ProposalStatus status) {
-        query.setParameter("freelancerProfileId", freelancerProfileId);
-        if (status != null) {
-            query.setParameter("status", status.name());
-        }
+        return new PageImpl<>(content, pageable, total == null ? 0 : total);
     }
 }

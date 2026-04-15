@@ -29,6 +29,7 @@ public class JwtTokenProvider {
 
     @PostConstruct
     void initialize() {
+        validateSecret(jwtProperties.getSecret());
         this.secretKey = Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8));
     }
 
@@ -89,6 +90,10 @@ public class JwtTokenProvider {
                 .get("type", String.class);
     }
 
+    public boolean isAccessToken(String token) {
+        return "access".equals(getTokenType(token));
+    }
+
     public Authentication createAuthentication(UserDetails userDetails, HttpServletRequest request) {
         UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
@@ -111,5 +116,18 @@ public class JwtTokenProvider {
 
     public long getRefreshTokenExpirationSeconds() {
         return jwtProperties.getRefreshTokenExpirationMinutes() * 60;
+    }
+
+    private void validateSecret(String secret) {
+        if (!StringUtils.hasText(secret) || secret.length() < 32 || isPlaceholder(secret)) {
+            throw new IllegalStateException("JWT secret must be configured with a secure value of at least 32 characters.");
+        }
+    }
+
+    private boolean isPlaceholder(String secret) {
+        String normalizedSecret = secret.toLowerCase();
+        return normalizedSecret.contains("change-me")
+                || normalizedSecret.contains("replace-me")
+                || normalizedSecret.contains("your-secret");
     }
 }

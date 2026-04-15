@@ -1,17 +1,14 @@
 package com.ieum.ansimdonghaeng.domain.auth.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ieum.ansimdonghaeng.common.jwt.JwtTokenProvider;
 import com.ieum.ansimdonghaeng.domain.auth.dto.request.AuthLoginRequest;
 import com.ieum.ansimdonghaeng.domain.auth.dto.request.AuthRefreshRequest;
 import com.ieum.ansimdonghaeng.domain.auth.dto.request.AuthSignupRequest;
-import com.ieum.ansimdonghaeng.domain.auth.repository.RefreshTokenRepository;
 import com.ieum.ansimdonghaeng.domain.freelancer.repository.FreelancerProfileRepository;
 import com.ieum.ansimdonghaeng.domain.project.repository.ProjectRepository;
 import com.ieum.ansimdonghaeng.domain.proposal.repository.ProposalRepository;
 import com.ieum.ansimdonghaeng.domain.user.entity.User;
 import com.ieum.ansimdonghaeng.domain.user.repository.UserRepository;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -20,7 +17,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -45,9 +41,6 @@ class AuthControllerIntegrationTest {
     private UserRepository userRepository;
 
     @Autowired
-    private RefreshTokenRepository refreshTokenRepository;
-
-    @Autowired
     private ProposalRepository proposalRepository;
 
     @Autowired
@@ -59,15 +52,11 @@ class AuthControllerIntegrationTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private JwtTokenProvider jwtTokenProvider;
-
     @BeforeEach
     void setUp() {
         proposalRepository.deleteAll();
         projectRepository.deleteAll();
         freelancerProfileRepository.deleteAll();
-        refreshTokenRepository.deleteAll();
         userRepository.deleteAll();
     }
 
@@ -110,6 +99,30 @@ class AuthControllerIntegrationTest {
     }
 
     @Test
+    @DisplayName("login accepts the legacy username field for backward compatibility")
+    void loginAcceptsLegacyUsernameAlias() throws Exception {
+        userRepository.save(User.builder()
+                .email("legacy-login@test.com")
+                .passwordHash(passwordEncoder.encode("1234"))
+                .name("legacy-user")
+                .roleCode("ROLE_USER")
+                .activeYn(true)
+                .build());
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "username": "legacy-login@test.com",
+                                  "password": "1234"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.user.email").value("legacy-login@test.com"));
+    }
+
+    @Test
     @DisplayName("refresh rotates refresh token and returns a new token pair")
     void refreshReturnsNewTokenPair() throws Exception {
         userRepository.save(User.builder()
@@ -141,8 +154,39 @@ class AuthControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("logout requires valid authentication")
-    void logoutRequiresAuthentication() throws Exception {
+    @DisplayName("reissue alias returns a new token pair")
+    void reissueAliasReturnsNewTokenPair() throws Exception {
+        userRepository.save(User.builder()
+                .email("reissue@test.com")
+                .passwordHash(passwordEncoder.encode("1234"))
+                .name("reissue-user")
+                .roleCode("ROLE_USER")
+                .activeYn(true)
+                .build());
+
+        MvcResult loginResult = mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new AuthLoginRequest("reissue@test.com", "1234"))))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String refreshToken = objectMapper.readTree(loginResult.getResponse().getContentAsString())
+                .path("data")
+                .path("refreshToken")
+                .asText();
+
+        mockMvc.perform(post("/api/v1/auth/reissue")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new AuthRefreshRequest(refreshToken))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.accessToken").isNotEmpty())
+                .andExpect(jsonPath("$.data.refreshToken").isNotEmpty())
+                .andExpect(jsonPath("$.data.user.email").value("reissue@test.com"));
+    }
+
+    @Test
+    @DisplayName("logout succeeds with an authenticated access token")
+    void logoutSucceedsWithAuthenticatedAccessToken() throws Exception {
         userRepository.save(User.builder()
                 .email("logout@test.com")
                 .passwordHash(passwordEncoder.encode("1234"))
@@ -151,13 +195,19 @@ class AuthControllerIntegrationTest {
                 .activeYn(true)
                 .build());
 
-        String token = "Bearer " + jwtTokenProvider.generateAccessToken(
-                "logout@test.com",
-                List.of(new SimpleGrantedAuthority("ROLE_USER"))
-        );
+        MvcResult loginResult = mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new AuthLoginRequest("logout@test.com", "1234"))))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String accessToken = objectMapper.readTree(loginResult.getResponse().getContentAsString())
+                .path("data")
+                .path("accessToken")
+                .asText();
 
         mockMvc.perform(post("/api/v1/auth/logout")
-                        .header(HttpHeaders.AUTHORIZATION, token))
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
     }

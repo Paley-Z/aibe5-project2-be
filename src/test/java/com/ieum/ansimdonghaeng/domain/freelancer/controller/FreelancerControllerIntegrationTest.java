@@ -4,7 +4,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.ieum.ansimdonghaeng.domain.auth.repository.RefreshTokenRepository;
 import com.ieum.ansimdonghaeng.domain.freelancer.entity.FreelancerProfile;
 import com.ieum.ansimdonghaeng.domain.freelancer.repository.FreelancerProfileRepository;
 import com.ieum.ansimdonghaeng.domain.project.repository.ProjectRepository;
@@ -44,16 +43,12 @@ class FreelancerControllerIntegrationTest {
     private ProjectRepository projectRepository;
 
     @Autowired
-    private RefreshTokenRepository refreshTokenRepository;
-
-    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @BeforeEach
     void setUp() {
         proposalRepository.deleteAll();
         projectRepository.deleteAll();
-        refreshTokenRepository.deleteAll();
         freelancerProfileRepository.deleteAll();
         userRepository.deleteAll();
     }

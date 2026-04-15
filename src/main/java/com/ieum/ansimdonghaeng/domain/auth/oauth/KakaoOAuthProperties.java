@@ -1,6 +1,7 @@
 package com.ieum.ansimdonghaeng.domain.auth.oauth;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Positive;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -14,4 +15,10 @@ public class KakaoOAuthProperties {
 
     @NotBlank
     private String userInfoUri;
+
+    @Positive
+    private int connectTimeoutMillis = 3000;
+
+    @Positive
+    private int responseTimeoutMillis = 5000;
 }

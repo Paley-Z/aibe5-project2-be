@@ -8,7 +8,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ieum.ansimdonghaeng.common.jwt.JwtTokenProvider;
-import com.ieum.ansimdonghaeng.domain.auth.repository.RefreshTokenRepository;
 import com.ieum.ansimdonghaeng.domain.freelancer.entity.FreelancerProfile;
 import com.ieum.ansimdonghaeng.domain.freelancer.repository.FreelancerProfileRepository;
 import com.ieum.ansimdonghaeng.domain.project.entity.Project;
@@ -60,9 +59,6 @@ class ProposalControllerIntegrationTest {
     private ProposalRepository proposalRepository;
 
     @Autowired
-    private RefreshTokenRepository refreshTokenRepository;
-
-    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Autowired
@@ -73,7 +69,6 @@ class ProposalControllerIntegrationTest {
         proposalRepository.deleteAll();
         projectRepository.deleteAll();
         freelancerProfileRepository.deleteAll();
-        refreshTokenRepository.deleteAll();
         userRepository.deleteAll();
     }
 

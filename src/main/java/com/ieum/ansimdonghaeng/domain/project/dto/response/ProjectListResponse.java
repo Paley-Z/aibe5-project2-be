@@ -1,6 +1,6 @@
 package com.ieum.ansimdonghaeng.domain.project.dto.response;
 
-import com.ieum.ansimdonghaeng.domain.project.entity.Project;
+import com.ieum.ansimdonghaeng.domain.project.repository.ProjectSummaryView;
 import java.util.List;
 import org.springframework.data.domain.Page;
 
@@ -15,7 +15,7 @@ public record ProjectListResponse(
 ) {
 
     // Page 결과를 API 계약에 맞는 목록 응답 DTO로 변환한다.
-    public static ProjectListResponse from(Page<Project> projectPage) {
+    public static ProjectListResponse from(Page<ProjectSummaryView> projectPage) {
         return new ProjectListResponse(
                 projectPage.getContent().stream().map(ProjectSummaryResponse::from).toList(),
                 projectPage.getNumber(),

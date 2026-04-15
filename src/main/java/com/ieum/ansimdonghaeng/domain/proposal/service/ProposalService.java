@@ -14,6 +14,7 @@ import com.ieum.ansimdonghaeng.domain.proposal.dto.response.ProposalListResponse
 import com.ieum.ansimdonghaeng.domain.proposal.entity.Proposal;
 import com.ieum.ansimdonghaeng.domain.proposal.entity.ProposalStatus;
 import com.ieum.ansimdonghaeng.domain.proposal.repository.ProposalRepository;
+import com.ieum.ansimdonghaeng.domain.proposal.repository.ProposalSummaryView;
 import com.ieum.ansimdonghaeng.domain.user.entity.UserRole;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -55,7 +56,7 @@ public class ProposalService {
     // 프리랜서는 자신에게 도착한 제안만 상태 조건과 함께 페이지로 조회한다.
     public ProposalListResponse getMyProposals(Long currentUserId, ProposalStatus status, int page, int size) {
         FreelancerProfile currentFreelancerProfile = getCurrentFreelancerProfile(currentUserId);
-        Page<Proposal> proposalPage = proposalRepository.findFreelancerProposals(
+        Page<ProposalSummaryView> proposalPage = proposalRepository.findFreelancerProposals(
                 currentFreelancerProfile.getId(),
                 status,
                 PageRequest.of(page, size)

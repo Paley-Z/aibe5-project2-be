@@ -1,6 +1,6 @@
 package com.ieum.ansimdonghaeng.domain.proposal.dto.response;
 
-import com.ieum.ansimdonghaeng.domain.proposal.entity.Proposal;
+import com.ieum.ansimdonghaeng.domain.proposal.repository.ProposalSummaryView;
 import java.util.List;
 import org.springframework.data.domain.Page;
 
@@ -14,7 +14,7 @@ public record ProposalListResponse(
 ) {
 
     // 공통 페이지 응답 형식에 맞춰 프리랜서 제안 목록 결과를 감싼다.
-    public static ProposalListResponse from(Page<Proposal> proposalPage) {
+    public static ProposalListResponse from(Page<ProposalSummaryView> proposalPage) {
         return new ProposalListResponse(
                 proposalPage.getContent().stream()
                         .map(ProposalSummaryResponse::from)

@@ -1,106 +1,54 @@
 package com.ieum.ansimdonghaeng.domain.project.repository;
 
-import com.ieum.ansimdonghaeng.domain.project.entity.Project;
+import static com.ieum.ansimdonghaeng.domain.project.entity.QProject.project;
+
 import com.ieum.ansimdonghaeng.domain.project.entity.ProjectStatus;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
-import jakarta.persistence.Query;
+import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 @Repository
+@RequiredArgsConstructor
 public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
 
-    private static final String PROJECT_COLUMNS = """
-            p.PROJECT_ID,
-            p.OWNER_USER_ID,
-            p.PROJECT_TYPE_CODE,
-            p.SERVICE_REGION_CODE,
-            p.TITLE,
-            p.REQUESTED_START_AT,
-            p.REQUESTED_END_AT,
-            p.SERVICE_ADDRESS,
-            p.SERVICE_DETAIL_ADDRESS,
-            p.REQUEST_DETAIL,
-            p.STATUS_CODE,
-            p.ACCEPTED_AT,
-            p.STARTED_AT,
-            p.COMPLETED_AT,
-            p.CANCELLED_AT,
-            p.CANCELLED_REASON,
-            p.CREATED_AT,
-            p.UPDATED_AT
-            """;
-
-    @PersistenceContext
-    private EntityManager entityManager;
+    private final JPAQueryFactory queryFactory;
 
     @Override
-    public Page<Project> findMyProjects(Long ownerUserId, ProjectStatus status, Pageable pageable) {
-        String whereClause = buildWhereClause(status);
-        String contentQuery = """
-                SELECT
-                    PROJECT_ID,
-                    OWNER_USER_ID,
-                    PROJECT_TYPE_CODE,
-                    SERVICE_REGION_CODE,
-                    TITLE,
-                    REQUESTED_START_AT,
-                    REQUESTED_END_AT,
-                    SERVICE_ADDRESS,
-                    SERVICE_DETAIL_ADDRESS,
-                    REQUEST_DETAIL,
-                    STATUS_CODE,
-                    ACCEPTED_AT,
-                    STARTED_AT,
-                    COMPLETED_AT,
-                    CANCELLED_AT,
-                    CANCELLED_REASON,
-                    CREATED_AT,
-                    UPDATED_AT
-                FROM (
-                    SELECT
-                """ + PROJECT_COLUMNS + """
-                        ,
-                        ROW_NUMBER() OVER (ORDER BY p.CREATED_AT DESC) AS rn
-                    FROM PROJECT p
-                """ + whereClause + """
-                )
-                WHERE rn > :offsetRow
-                  AND rn <= :endRow
-                ORDER BY rn
-                """;
+    public Page<ProjectSummaryView> findMyProjects(Long ownerUserId, ProjectStatus status, Pageable pageable) {
+        BooleanExpression statusCondition = status == null ? null : project.status.eq(status);
 
-        Query query = entityManager.createNativeQuery(contentQuery, Project.class);
-        bindParameters(query, ownerUserId, status);
-        query.setParameter("offsetRow", pageable.getOffset());
-        query.setParameter("endRow", pageable.getOffset() + pageable.getPageSize());
+        List<ProjectSummaryView> content = queryFactory
+                .select(Projections.constructor(
+                        ProjectSummaryView.class,
+                        project.id,
+                        project.title,
+                        project.projectTypeCode,
+                        project.serviceRegionCode,
+                        project.requestedStartAt,
+                        project.requestedEndAt,
+                        project.status,
+                        project.createdAt,
+                        project.updatedAt
+                ))
+                .from(project)
+                .where(project.ownerUserId.eq(ownerUserId), statusCondition)
+                .orderBy(project.createdAt.desc(), project.id.desc())
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
 
-        @SuppressWarnings("unchecked")
-        List<Project> content = query.getResultList();
+        Long total = queryFactory
+                .select(project.count())
+                .from(project)
+                .where(project.ownerUserId.eq(ownerUserId), statusCondition)
+                .fetchOne();
 
-        String countQuery = "SELECT COUNT(*) FROM PROJECT p " + whereClause;
-        Query totalQuery = entityManager.createNativeQuery(countQuery);
-        bindParameters(totalQuery, ownerUserId, status);
-        long total = ((Number) totalQuery.getSingleResult()).longValue();
-
-        return new PageImpl<>(content, pageable, total);
-    }
-
-    private String buildWhereClause(ProjectStatus status) {
-        if (status == null) {
-            return " WHERE p.OWNER_USER_ID = :ownerUserId ";
-        }
-        return " WHERE p.OWNER_USER_ID = :ownerUserId AND p.STATUS_CODE = :status ";
-    }
-
-    private void bindParameters(Query query, Long ownerUserId, ProjectStatus status) {
-        query.setParameter("ownerUserId", ownerUserId);
-        if (status != null) {
-            query.setParameter("status", status.name());
-        }
+        return new PageImpl<>(content, pageable, total == null ? 0 : total);
     }
 }

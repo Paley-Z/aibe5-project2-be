@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ieum.ansimdonghaeng.domain.auth.dto.request.KakaoOAuthLoginRequest;
 import com.ieum.ansimdonghaeng.domain.auth.dto.response.KakaoUserInfo;
 import com.ieum.ansimdonghaeng.domain.auth.oauth.KakaoOAuthClient;
-import com.ieum.ansimdonghaeng.domain.auth.repository.RefreshTokenRepository;
 import com.ieum.ansimdonghaeng.domain.freelancer.repository.FreelancerProfileRepository;
 import com.ieum.ansimdonghaeng.domain.project.repository.ProjectRepository;
 import com.ieum.ansimdonghaeng.domain.proposal.repository.ProposalRepository;
@@ -40,9 +39,6 @@ class KakaoOAuthControllerIntegrationTest {
     private UserRepository userRepository;
 
     @Autowired
-    private RefreshTokenRepository refreshTokenRepository;
-
-    @Autowired
     private ProposalRepository proposalRepository;
 
     @Autowired
@@ -59,7 +55,6 @@ class KakaoOAuthControllerIntegrationTest {
         proposalRepository.deleteAll();
         projectRepository.deleteAll();
         freelancerProfileRepository.deleteAll();
-        refreshTokenRepository.deleteAll();
         userRepository.deleteAll();
     }
 

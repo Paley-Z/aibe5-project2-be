@@ -12,6 +12,7 @@ import com.ieum.ansimdonghaeng.domain.project.dto.response.ProjectListResponse;
 import com.ieum.ansimdonghaeng.domain.project.entity.Project;
 import com.ieum.ansimdonghaeng.domain.project.entity.ProjectStatus;
 import com.ieum.ansimdonghaeng.domain.project.repository.ProjectRepository;
+import com.ieum.ansimdonghaeng.domain.project.repository.ProjectSummaryView;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -52,7 +53,7 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public ProjectListResponse getMyProjects(Long currentUserId, ProjectStatus status, int page, int size) {
         PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<Project> projectPage = projectRepository.findMyProjects(currentUserId, status, pageable);
+        Page<ProjectSummaryView> projectPage = projectRepository.findMyProjects(currentUserId, status, pageable);
         return ProjectListResponse.from(projectPage);
     }
 

@@ -37,7 +37,14 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/signup", "/api/v1/auth/refresh", "/api/v1/auth/oauth/kakao").permitAll()
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/v1/auth/login",
+                                "/api/v1/auth/signup",
+                                "/api/v1/auth/refresh",
+                                "/api/v1/auth/reissue",
+                                "/api/v1/auth/oauth/kakao"
+                        ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/users/*/public-profile").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/freelancers", "/api/v1/freelancers/*").permitAll()
                         .requestMatchers("/api/v1/admin/**").hasAuthority("ROLE_ADMIN")

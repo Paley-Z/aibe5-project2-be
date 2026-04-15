@@ -3,9 +3,12 @@ package com.ieum.ansimdonghaeng.domain.user.entity;
 import com.ieum.ansimdonghaeng.common.audit.BaseAuditEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "APP_USER")
+@SequenceGenerator(name = "app_user_seq_generator", sequenceName = "SEQ_APP_USER", allocationSize = 1)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
@@ -13,7 +16,7 @@ import lombok.*;
 public class User extends BaseAuditEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "app_user_seq_generator")
     @Column(name = "USER_ID")
     private Long id;
 
@@ -29,20 +32,23 @@ public class User extends BaseAuditEntity {
     @Column(name = "PHONE", length = 20)
     private String phone;
 
-    @Column(name = "INTRO", length = 500)
+    @Lob
+    @Basic(fetch = FetchType.LAZY)
+    @Column(name = "INTRO")
     private String intro;
 
     @Column(name = "ROLE_CODE", nullable = false, length = 50)
     private String roleCode;
 
-    @Column(name = "ACTIVE_YN", nullable = false)
+    @JdbcTypeCode(SqlTypes.CHAR)
+    @Column(name = "ACTIVE_YN", nullable = false, length = 1)
     private Boolean activeYn;
 
+    @Transient
     @Builder.Default
-    @Column(name = "PROVIDER_CODE", nullable = false, length = 20)
     private String providerCode = AuthProvider.LOCAL.getCode();
 
-    @Column(name = "PROVIDER_USER_ID", length = 100)
+    @Transient
     private String providerUserId;
 
     public void updateProfile(String name, String phone, String intro) {

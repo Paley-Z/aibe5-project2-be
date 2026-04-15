@@ -52,6 +52,18 @@ class SecurityExceptionResponseTest {
                 .andExpect(jsonPath("$.error.path").value("/api/v1/test/admin-only"));
     }
 
+    @Test
+    void invalidBearerTokenReturnsInvalidTokenCode() throws Exception {
+        mockMvc.perform(get("/api/v1/projects/me")
+                        .header("Authorization", "Bearer invalid-token"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("AUTH_401_1"))
+                .andExpect(jsonPath("$.error.status").value(401))
+                .andExpect(jsonPath("$.error.path").value("/api/v1/projects/me"));
+    }
+
     @RestController
     static class AdminOnlyTestController {
 

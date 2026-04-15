@@ -1,5 +1,6 @@
 package com.ieum.ansimdonghaeng.common.security;
 
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.PositiveOrZero;
 import java.util.List;
@@ -27,4 +28,12 @@ public class CorsProperties {
 
     @PositiveOrZero
     private long maxAge = 3600L;
+
+    @AssertTrue(message = "CORS allowedOrigins must not contain wildcard entries when allowCredentials is true.")
+    public boolean isAllowedOriginsConfigurationValid() {
+        if (!allowCredentials) {
+            return true;
+        }
+        return allowedOrigins.stream().noneMatch(origin -> origin.contains("*"));
+    }
 }

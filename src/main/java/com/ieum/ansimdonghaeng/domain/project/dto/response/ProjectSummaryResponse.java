@@ -1,7 +1,7 @@
 package com.ieum.ansimdonghaeng.domain.project.dto.response;
 
-import com.ieum.ansimdonghaeng.domain.project.entity.Project;
 import com.ieum.ansimdonghaeng.domain.project.entity.ProjectStatus;
+import com.ieum.ansimdonghaeng.domain.project.repository.ProjectSummaryView;
 import java.time.LocalDateTime;
 
 // 프로젝트 목록 카드에 필요한 요약 정보를 담는다.
@@ -18,17 +18,17 @@ public record ProjectSummaryResponse(
 ) {
 
     // 엔티티를 목록 요약 DTO로 변환한다.
-    public static ProjectSummaryResponse from(Project project) {
+    public static ProjectSummaryResponse from(ProjectSummaryView project) {
         return new ProjectSummaryResponse(
-                project.getId(),
-                project.getTitle(),
-                project.getProjectTypeCode(),
-                project.getServiceRegionCode(),
-                project.getRequestedStartAt(),
-                project.getRequestedEndAt(),
-                project.getStatus(),
-                project.getCreatedAt(),
-                project.getUpdatedAt()
+                project.projectId(),
+                project.title(),
+                project.projectTypeCode(),
+                project.serviceRegionCode(),
+                project.requestedStartAt(),
+                project.requestedEndAt(),
+                project.status(),
+                project.createdAt(),
+                project.updatedAt()
         );
     }
 }

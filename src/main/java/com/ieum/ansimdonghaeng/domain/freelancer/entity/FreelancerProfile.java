@@ -24,6 +24,8 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "FREELANCER_PROFILE")
@@ -47,10 +49,12 @@ public class FreelancerProfile extends BaseAuditEntity {
     @Column(name = "CAREER_DESCRIPTION")
     private String careerDescription;
 
-    @Column(name = "CAREGIVER_YN", nullable = false)
+    @JdbcTypeCode(SqlTypes.CHAR)
+    @Column(name = "CAREGIVER_YN", nullable = false, length = 1)
     private Boolean caregiverYn;
 
-    @Column(name = "VERIFIED_YN", nullable = false)
+    @JdbcTypeCode(SqlTypes.CHAR)
+    @Column(name = "VERIFIED_YN", nullable = false, length = 1)
     private Boolean verifiedYn;
 
     @Column(name = "AVERAGE_RATING", nullable = false, precision = 3, scale = 2)
@@ -59,7 +63,8 @@ public class FreelancerProfile extends BaseAuditEntity {
     @Column(name = "ACTIVITY_COUNT", nullable = false)
     private Long activityCount;
 
-    @Column(name = "PUBLIC_YN", nullable = false)
+    @JdbcTypeCode(SqlTypes.CHAR)
+    @Column(name = "PUBLIC_YN", nullable = false, length = 1)
     private Boolean publicYn;
 
     @ElementCollection(fetch = FetchType.LAZY)

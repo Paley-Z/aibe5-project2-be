@@ -24,7 +24,7 @@ public class CustomUserDetailsService implements UserDetailsService {
             throw new UsernameNotFoundException("Username must not be blank.");
         }
 
-        User user = userRepository.findByEmail(username)
+        User user = userRepository.findByEmailIgnoreCase(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found. email=" + username));
 
         if (Boolean.FALSE.equals(user.getActiveYn())) {
