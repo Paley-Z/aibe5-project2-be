@@ -8,6 +8,10 @@ public enum ErrorCode {
     FORBIDDEN(HttpStatus.FORBIDDEN, "COMMON_403", "Access is denied."),
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_401_1", "Invalid or expired token."),
     RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "COMMON_404", "Requested resource was not found."),
+    DUPLICATE_EMAIL(HttpStatus.CONFLICT, "AUTH_409", "Email is already registered."),
+    INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "AUTH_401", "Invalid email or password."),
+    INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_401_REFRESH", "Refresh token is invalid or expired."),
+    USER_INACTIVE(HttpStatus.FORBIDDEN, "AUTH_403", "User account is inactive."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON_500", "Unexpected server error.");
 
     private final HttpStatus status;

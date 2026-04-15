@@ -33,8 +33,19 @@ public class JwtTokenProvider {
     }
 
     public String generateAccessToken(String username, Collection<? extends GrantedAuthority> authorities) {
+        return generateToken(username, authorities, jwtProperties.getAccessTokenExpirationMinutes(), "access");
+    }
+
+    public String generateRefreshToken(String username, Collection<? extends GrantedAuthority> authorities) {
+        return generateToken(username, authorities, jwtProperties.getRefreshTokenExpirationMinutes(), "refresh");
+    }
+
+    private String generateToken(String username,
+                                 Collection<? extends GrantedAuthority> authorities,
+                                 long expirationMinutes,
+                                 String type) {
         Instant now = Instant.now();
-        Instant expiration = now.plus(jwtProperties.getAccessTokenExpirationMinutes(), ChronoUnit.MINUTES);
+        Instant expiration = now.plus(expirationMinutes, ChronoUnit.MINUTES);
         String scope = authorities.stream()
                 .map(GrantedAuthority::getAuthority)
                 .reduce((left, right) -> left + " " + right)
@@ -43,6 +54,7 @@ public class JwtTokenProvider {
         return Jwts.builder()
                 .subject(username)
                 .issuer(jwtProperties.getIssuer())
+                .claim("type", type)
                 .claim("scope", scope)
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expiration))
@@ -68,6 +80,15 @@ public class JwtTokenProvider {
                 .getSubject();
     }
 
+    public String getTokenType(String token) {
+        return Jwts.parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .get("type", String.class);
+    }
+
     public Authentication createAuthentication(UserDetails userDetails, HttpServletRequest request) {
         UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
@@ -86,5 +107,9 @@ public class JwtTokenProvider {
 
     public long getAccessTokenExpirationSeconds() {
         return jwtProperties.getAccessTokenExpirationMinutes() * 60;
+    }
+
+    public long getRefreshTokenExpirationSeconds() {
+        return jwtProperties.getRefreshTokenExpirationMinutes() * 60;
     }
 }

@@ -1,7 +1,10 @@
 package com.ieum.ansimdonghaeng.common.security;
 
-import com.ieum.ansimdonghaeng.domain.user.entity.UserRole;
+import com.ieum.ansimdonghaeng.domain.user.entity.User;
+import com.ieum.ansimdonghaeng.domain.user.repository.UserRepository;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -10,7 +13,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 @Service
+@RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
+
+    private final UserRepository userRepository;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -18,11 +24,18 @@ public class CustomUserDetailsService implements UserDetailsService {
             throw new UsernameNotFoundException("Username must not be blank.");
         }
 
+        User user = userRepository.findByEmail(username)
+            .orElseThrow(() -> new UsernameNotFoundException("User not found. email=" + username));
+
+        if (Boolean.FALSE.equals(user.getActiveYn())) {
+            throw new DisabledException("User is inactive. email=" + username);
+        }
+
         return CustomUserDetails.builder()
-                .username(username)
-                .password("{noop}bootstrap-password")
-                .authorities(List.of(new SimpleGrantedAuthority(UserRole.USER.asAuthority())))
-                .enabled(true)
-                .build();
+            .username(user.getEmail())
+            .password(user.getPasswordHash())
+            .authorities(List.of(new SimpleGrantedAuthority(user.getRole().getCode())))
+            .enabled(Boolean.TRUE.equals(user.getActiveYn()))
+            .build();
     }
 }
