@@ -6,7 +6,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.Optional;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -56,6 +59,32 @@ public class GlobalExceptionHandler {
                 request.getRequestURI()
         );
         return ResponseEntity.status(ErrorCode.FORBIDDEN.getStatus()).body(ApiResponse.error(errorResponse));
+    }
+
+    @ExceptionHandler({
+            BadCredentialsException.class,
+            UsernameNotFoundException.class,
+            AuthenticationCredentialsNotFoundException.class
+    })
+    public ResponseEntity<ApiResponse<Void>> handleAuthenticationException(Exception exception,
+                                                                           HttpServletRequest request) {
+        ErrorResponse errorResponse = ErrorResponse.of(
+                ErrorCode.INVALID_CREDENTIALS,
+                ErrorCode.INVALID_CREDENTIALS.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(ErrorCode.INVALID_CREDENTIALS.getStatus()).body(ApiResponse.error(errorResponse));
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiResponse<Void>> handleIllegalArgumentException(IllegalArgumentException exception,
+                                                                            HttpServletRequest request) {
+        ErrorResponse errorResponse = ErrorResponse.of(
+                ErrorCode.INVALID_INPUT_VALUE,
+                exception.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.badRequest().body(ApiResponse.error(errorResponse));
     }
 
     @ExceptionHandler(Exception.class)
