@@ -11,10 +11,13 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import java.util.Objects;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
 @Table(name = "VERIFICATION_FILE")
@@ -28,15 +31,23 @@ public class VerificationFile {
     @Column(name = "VERIFICATION_FILE_ID")
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "VERIFICATION_ID", nullable = false)
+    @Column(name = "VERIFICATION_ID", nullable = false)
+    private Long verificationId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "VERIFICATION_ID", insertable = false, updatable = false)
     private Verification verification;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "VERIFICATION_ID", insertable = false, updatable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private VerificationRequest verificationRequest;
+
     @Column(name = "ORIGINAL_NAME", nullable = false, length = 255)
-    private String originalName;
+    private String originalFilename;
 
     @Column(name = "STORED_NAME", nullable = false, length = 255)
-    private String storedName;
+    private String storedFilename;
 
     @Column(name = "FILE_URL", nullable = false, length = 2000)
     private String fileUrl;
@@ -51,16 +62,20 @@ public class VerificationFile {
     private LocalDateTime uploadedAt;
 
     @Builder(access = AccessLevel.PRIVATE)
-    private VerificationFile(Verification verification,
-                             String originalName,
-                             String storedName,
+    private VerificationFile(Long verificationId,
+                             Verification verification,
+                             VerificationRequest verificationRequest,
+                             String originalFilename,
+                             String storedFilename,
                              String fileUrl,
                              String contentType,
                              Long fileSize,
                              LocalDateTime uploadedAt) {
+        this.verificationId = verificationId;
         this.verification = verification;
-        this.originalName = originalName;
-        this.storedName = storedName;
+        this.verificationRequest = verificationRequest;
+        this.originalFilename = originalFilename;
+        this.storedFilename = storedFilename;
         this.fileUrl = fileUrl;
         this.contentType = contentType;
         this.fileSize = fileSize;
@@ -68,20 +83,51 @@ public class VerificationFile {
     }
 
     public static VerificationFile create(Verification verification,
-                                          String originalName,
-                                          String storedName,
+                                          String originalFilename,
+                                          String storedFilename,
                                           String fileUrl,
                                           String contentType,
                                           Long fileSize,
                                           LocalDateTime uploadedAt) {
         return VerificationFile.builder()
+                .verificationId(verification.getId())
                 .verification(verification)
-                .originalName(originalName)
-                .storedName(storedName)
+                .originalFilename(originalFilename)
+                .storedFilename(storedFilename)
                 .fileUrl(fileUrl)
                 .contentType(contentType)
                 .fileSize(fileSize)
                 .uploadedAt(uploadedAt)
                 .build();
+    }
+
+    public static VerificationFile create(VerificationRequest verificationRequest,
+                                          String originalFilename,
+                                          String storedFilename,
+                                          String fileUrl,
+                                          String contentType,
+                                          Long fileSize) {
+        return VerificationFile.builder()
+                .verificationId(verificationRequest.getId())
+                .verificationRequest(verificationRequest)
+                .originalFilename(originalFilename)
+                .storedFilename(storedFilename)
+                .fileUrl(fileUrl)
+                .contentType(contentType)
+                .fileSize(fileSize)
+                .uploadedAt(LocalDateTime.now())
+                .build();
+    }
+
+    public boolean isOwnedBy(Long userId) {
+        return Objects.equals(verificationRequest.getFreelancerProfile().getUser().getId(), userId);
+    }
+
+    public String getOriginalName() {
+        return originalFilename;
+    }
+
+    public String getStoredName() {
+        return storedFilename;
     }
 }
