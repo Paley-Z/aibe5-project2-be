@@ -5,6 +5,7 @@ import com.ieum.ansimdonghaeng.common.exception.ErrorCode;
 import com.ieum.ansimdonghaeng.domain.code.repository.AvailableTimeSlotCodeRepository;
 import com.ieum.ansimdonghaeng.domain.code.repository.ProjectTypeCodeRepository;
 import com.ieum.ansimdonghaeng.domain.code.repository.RegionCodeRepository;
+import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -42,7 +43,7 @@ public class CodeValidationService {
         validateCodes(codes, fieldName, availableTimeSlotCodeRepository::existsByCodeAndActiveYnTrue);
     }
 
-    private void validateCode(String code, String fieldName, Predicate<String> existsPredicate) {
+    private void validateCode(String code, String fieldName, Predicate<? super String> existsPredicate) {
         if (!StringUtils.hasText(code)) {
             return;
         }
@@ -51,7 +52,9 @@ public class CodeValidationService {
         }
     }
 
-    private void validateCodes(Set<String> codes, String fieldName, Predicate<String> existsPredicate) {
+    private void validateCodes(Collection<String> codes,
+                               String fieldName,
+                               Predicate<? super String> existsPredicate) {
         if (codes == null || codes.isEmpty()) {
             return;
         }
@@ -66,7 +69,7 @@ public class CodeValidationService {
         }
     }
 
-    private CustomException invalidCode(String fieldName, Set<String> invalidCodes) {
+    private CustomException invalidCode(String fieldName, Collection<String> invalidCodes) {
         return new CustomException(
                 ErrorCode.INVALID_INPUT_VALUE,
                 fieldName + ": unsupported code(s) " + invalidCodes
