@@ -138,6 +138,14 @@ public class FreelancerProfile extends BaseAuditEntity {
         return Boolean.TRUE.equals(publicYn);
     }
 
+    public void updatePublicYn(boolean publicYn) {
+        this.publicYn = publicYn;
+    }
+
+    public void updateVerifiedYn(boolean verifiedYn) {
+        this.verifiedYn = verifiedYn;
+    }
+
     public void update(String careerDescription,
                        Boolean caregiverYn,
                        Boolean publicYn,

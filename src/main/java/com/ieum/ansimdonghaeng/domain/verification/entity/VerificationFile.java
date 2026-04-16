@@ -31,8 +31,15 @@ public class VerificationFile {
     @Column(name = "VERIFICATION_FILE_ID")
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "VERIFICATION_ID", nullable = false)
+    @Column(name = "VERIFICATION_ID", nullable = false)
+    private Long verificationId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "VERIFICATION_ID", insertable = false, updatable = false)
+    private Verification verification;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "VERIFICATION_ID", insertable = false, updatable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     private VerificationRequest verificationRequest;
 
@@ -42,7 +49,7 @@ public class VerificationFile {
     @Column(name = "STORED_NAME", nullable = false, length = 255)
     private String storedFilename;
 
-    @Column(name = "FILE_URL", nullable = false, length = 500)
+    @Column(name = "FILE_URL", nullable = false, length = 2000)
     private String fileUrl;
 
     @Column(name = "CONTENT_TYPE", length = 100)
@@ -55,13 +62,17 @@ public class VerificationFile {
     private LocalDateTime uploadedAt;
 
     @Builder(access = AccessLevel.PRIVATE)
-    private VerificationFile(VerificationRequest verificationRequest,
+    private VerificationFile(Long verificationId,
+                             Verification verification,
+                             VerificationRequest verificationRequest,
                              String originalFilename,
                              String storedFilename,
                              String fileUrl,
                              String contentType,
                              Long fileSize,
                              LocalDateTime uploadedAt) {
+        this.verificationId = verificationId;
+        this.verification = verification;
         this.verificationRequest = verificationRequest;
         this.originalFilename = originalFilename;
         this.storedFilename = storedFilename;
@@ -71,6 +82,25 @@ public class VerificationFile {
         this.uploadedAt = uploadedAt;
     }
 
+    public static VerificationFile create(Verification verification,
+                                          String originalFilename,
+                                          String storedFilename,
+                                          String fileUrl,
+                                          String contentType,
+                                          Long fileSize,
+                                          LocalDateTime uploadedAt) {
+        return VerificationFile.builder()
+                .verificationId(verification.getId())
+                .verification(verification)
+                .originalFilename(originalFilename)
+                .storedFilename(storedFilename)
+                .fileUrl(fileUrl)
+                .contentType(contentType)
+                .fileSize(fileSize)
+                .uploadedAt(uploadedAt)
+                .build();
+    }
+
     public static VerificationFile create(VerificationRequest verificationRequest,
                                           String originalFilename,
                                           String storedFilename,
@@ -78,6 +108,7 @@ public class VerificationFile {
                                           String contentType,
                                           Long fileSize) {
         return VerificationFile.builder()
+                .verificationId(verificationRequest.getId())
                 .verificationRequest(verificationRequest)
                 .originalFilename(originalFilename)
                 .storedFilename(storedFilename)
@@ -90,5 +121,13 @@ public class VerificationFile {
 
     public boolean isOwnedBy(Long userId) {
         return Objects.equals(verificationRequest.getFreelancerProfile().getUser().getId(), userId);
+    }
+
+    public String getOriginalName() {
+        return originalFilename;
+    }
+
+    public String getStoredName() {
+        return storedFilename;
     }
 }

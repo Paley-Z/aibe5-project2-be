@@ -9,6 +9,13 @@ import org.springframework.data.repository.query.Param;
 
 public interface VerificationFileRepository extends JpaRepository<VerificationFile, Long> {
 
+    boolean existsByVerification_Id(Long verificationId);
+
+    @Query("select distinct verificationFile.verificationId from VerificationFile verificationFile where verificationFile.verificationId in :verificationIds")
+    List<Long> findVerificationIdsWithFiles(@Param("verificationIds") List<Long> verificationIds);
+
+    List<VerificationFile> findAllByVerification_IdOrderByUploadedAtAsc(Long verificationId);
+
     @Query("""
             select file
             from VerificationFile file

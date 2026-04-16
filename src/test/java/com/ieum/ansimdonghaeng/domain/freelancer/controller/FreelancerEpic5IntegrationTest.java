@@ -110,7 +110,7 @@ class FreelancerEpic5IntegrationTest {
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new VerificationCreateRequest(VerificationType.CAREER, "please verify")
+                                new VerificationCreateRequest(VerificationType.LICENSE, "please verify")
                         )))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.status").value("PENDING"))
@@ -125,7 +125,7 @@ class FreelancerEpic5IntegrationTest {
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new VerificationCreateRequest(VerificationType.CAREER, "duplicate")
+                                new VerificationCreateRequest(VerificationType.LICENSE, "duplicate")
                         )))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error.code").value("VERIFICATION_409_1"));
