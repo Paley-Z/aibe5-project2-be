@@ -3,7 +3,7 @@ package com.ieum.ansimdonghaeng.domain.notification.dto.response;
 import com.ieum.ansimdonghaeng.domain.notification.entity.Notification;
 import java.time.LocalDateTime;
 
-public record NotificationSummaryResponse(
+public record NotificationDetailResponse(
         Long notificationId,
         String notificationType,
         String title,
@@ -18,8 +18,8 @@ public record NotificationSummaryResponse(
         LocalDateTime readAt
 ) {
 
-    public static NotificationSummaryResponse from(Notification notification) {
-        return new NotificationSummaryResponse(
+    public static NotificationDetailResponse from(Notification notification) {
+        return new NotificationDetailResponse(
                 notification.getId(),
                 notification.getNotificationType().name(),
                 notification.getTitle(),

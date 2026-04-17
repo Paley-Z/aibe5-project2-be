@@ -45,30 +45,55 @@ class NotificationControllerIntegrationTest extends AdminIntegrationTestSupport 
                         ))))
                 .andExpect(status().isOk());
 
-        Notification notification = notificationRepository.findAll().stream()
+        mockMvc.perform(post("/api/v1/admin/notices")
+                        .with(adminPrincipal(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(java.util.Map.of(
+                                "title", "second notice",
+                                "content", "second content",
+                                "publishNow", true
+                        ))))
+                .andExpect(status().isOk());
+
+        java.util.List<Notification> notifications = notificationRepository.findAll().stream()
                 .filter(savedNotification -> savedNotification.getUser().getId().equals(user.getId()))
-                .findFirst()
+                .toList();
+        Notification notification = notifications.stream()
+                .max(java.util.Comparator.comparing(Notification::getCreatedAt))
                 .orElseThrow();
 
         mockMvc.perform(get("/api/v1/notifications").with(userPrincipal(user)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.totalElements").value(1))
-                .andExpect(jsonPath("$.data.unreadCount").value(1))
+                .andExpect(jsonPath("$.data.totalElements").value(2))
+                .andExpect(jsonPath("$.data.unreadCount").value(2))
                 .andExpect(jsonPath("$.data.content[0].notificationId").value(notification.getId()))
                 .andExpect(jsonPath("$.data.content[0].notificationType").value("NOTICE"))
-                .andExpect(jsonPath("$.data.content[0].readYn").value(false));
+                .andExpect(jsonPath("$.data.content[0].isRead").value(false));
+
+        mockMvc.perform(get("/api/v1/notifications/{notificationId}", notification.getId())
+                        .with(userPrincipal(user)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.notificationId").value(notification.getId()))
+                .andExpect(jsonPath("$.data.notificationType").value("NOTICE"))
+                .andExpect(jsonPath("$.data.isRead").value(false));
 
         mockMvc.perform(patch("/api/v1/notifications/{notificationId}/read", notification.getId())
                         .with(userPrincipal(user)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.notificationId").value(notification.getId()))
-                .andExpect(jsonPath("$.data.readYn").value(true))
-                .andExpect(jsonPath("$.data.readAt").exists());
+                .andExpect(jsonPath("$.data.isRead").value(true));
+
+        mockMvc.perform(get("/api/v1/notifications")
+                        .param("isRead", "true")
+                        .with(userPrincipal(user)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.totalElements").value(1))
+                .andExpect(jsonPath("$.data.content[0].notificationId").value(notification.getId()))
+                .andExpect(jsonPath("$.data.content[0].isRead").value(true));
 
         mockMvc.perform(patch("/api/v1/notifications/read-all").with(userPrincipal(user)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.updatedCount").value(0))
-                .andExpect(jsonPath("$.data.unreadCount").value(0));
+                .andExpect(jsonPath("$.data.readCount").value(1));
     }
 
     @Test
@@ -93,6 +118,11 @@ class NotificationControllerIntegrationTest extends AdminIntegrationTestSupport 
                 .orElseThrow();
 
         mockMvc.perform(patch("/api/v1/notifications/{notificationId}/read", ownersNotification.getId())
+                        .with(userPrincipal(otherUser)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error.code").value("NOTIFICATION_404_1"));
+
+        mockMvc.perform(get("/api/v1/notifications/{notificationId}", ownersNotification.getId())
                         .with(userPrincipal(otherUser)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error.code").value("NOTIFICATION_404_1"));

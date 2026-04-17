@@ -4,6 +4,7 @@ import com.ieum.ansimdonghaeng.common.response.ApiResponse;
 import com.ieum.ansimdonghaeng.common.security.AuthenticatedUserSupport;
 import com.ieum.ansimdonghaeng.common.security.CustomUserDetails;
 import com.ieum.ansimdonghaeng.domain.notification.dto.response.NotificationBulkReadResponse;
+import com.ieum.ansimdonghaeng.domain.notification.dto.response.NotificationDetailResponse;
 import com.ieum.ansimdonghaeng.domain.notification.dto.response.NotificationListResponse;
 import com.ieum.ansimdonghaeng.domain.notification.dto.response.NotificationReadResponse;
 import com.ieum.ansimdonghaeng.domain.notification.service.NotificationService;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -29,10 +31,28 @@ public class NotificationController {
     @GetMapping
     public ResponseEntity<ApiResponse<NotificationListResponse>> getMyNotifications(
             @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestParam(required = false) Boolean isRead,
             @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         return ResponseEntity.ok(ApiResponse.success(
-                notificationService.getMyNotifications(AuthenticatedUserSupport.currentUserId(userDetails), pageable)
+                notificationService.getMyNotifications(
+                        AuthenticatedUserSupport.currentUserId(userDetails),
+                        isRead,
+                        pageable
+                )
+        ));
+    }
+
+    @GetMapping("/{notificationId}")
+    public ResponseEntity<ApiResponse<NotificationDetailResponse>> getNotification(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long notificationId
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                notificationService.getNotification(
+                        AuthenticatedUserSupport.currentUserId(userDetails),
+                        notificationId
+                )
         ));
     }
 
