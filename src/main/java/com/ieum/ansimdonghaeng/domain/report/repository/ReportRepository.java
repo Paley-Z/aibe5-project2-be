@@ -22,6 +22,8 @@ public interface ReportRepository extends JpaRepository<Report, Long>, JpaSpecif
     @Override
     Page<Report> findAll(Specification<Report> spec, Pageable pageable);
 
+    boolean existsByReview_IdAndReporterUser_Id(Long reviewId, Long reporterUserId);
+
     @EntityGraph(attributePaths = {"review", "review.project", "review.project.ownerUser", "reporterUser"})
     List<Report> findTop5ByStatusOrderByCreatedAtDescIdDesc(ReportStatus status);
 

@@ -7,9 +7,13 @@ import com.ieum.ansimdonghaeng.domain.notification.dto.response.NotificationList
 import com.ieum.ansimdonghaeng.domain.notification.dto.response.NotificationReadResponse;
 import com.ieum.ansimdonghaeng.domain.notification.entity.Notification;
 import com.ieum.ansimdonghaeng.domain.notification.repository.NotificationRepository;
+import com.ieum.ansimdonghaeng.domain.project.entity.Project;
+import com.ieum.ansimdonghaeng.domain.proposal.entity.Proposal;
 import com.ieum.ansimdonghaeng.domain.user.entity.User;
 import com.ieum.ansimdonghaeng.domain.user.repository.UserRepository;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -46,6 +50,76 @@ public class NotificationService {
         int updatedCount = notificationRepository.markAllAsRead(currentUserId, LocalDateTime.now());
         long unreadCount = notificationRepository.countByUser_IdAndReadYnFalse(currentUserId);
         return new NotificationBulkReadResponse(updatedCount, unreadCount);
+    }
+
+    @Transactional
+    public void notifyProposalReceived(Proposal proposal) {
+        User freelancerUser = proposal.getFreelancerProfile().getUser();
+        if (!Boolean.TRUE.equals(freelancerUser.getActiveYn())) {
+            return;
+        }
+        notificationRepository.save(Notification.proposalReceived(
+                freelancerUser,
+                proposal,
+                "새 제안이 도착했습니다.",
+                proposal.getProject().getTitle() + " 프로젝트에 대한 새 제안이 도착했습니다."
+        ));
+    }
+
+    @Transactional
+    public void notifyProposalAccepted(Proposal proposal) {
+        User ownerUser = proposal.getProject().getOwnerUser();
+        if (ownerUser == null || !Boolean.TRUE.equals(ownerUser.getActiveYn())) {
+            return;
+        }
+        notificationRepository.save(Notification.proposalAccepted(
+                ownerUser,
+                proposal,
+                "제안이 수락되었습니다.",
+                proposal.getFreelancerProfile().getUser().getName() + " 님이 제안을 수락했습니다."
+        ));
+    }
+
+    @Transactional
+    public void notifyProjectStatusChanged(Project project, Proposal acceptedProposal) {
+        List<Notification> notifications = new ArrayList<>();
+        User ownerUser = project.getOwnerUser();
+        User freelancerUser = acceptedProposal.getFreelancerProfile().getUser();
+        String content = project.getTitle() + " 프로젝트 상태가 " + project.getStatus().name() + "(으)로 변경되었습니다.";
+
+        if (ownerUser != null && Boolean.TRUE.equals(ownerUser.getActiveYn())) {
+            notifications.add(Notification.projectStatusChanged(
+                    ownerUser,
+                    project,
+                    "프로젝트 상태가 변경되었습니다.",
+                    content
+            ));
+        }
+        if (freelancerUser != null
+                && Boolean.TRUE.equals(freelancerUser.getActiveYn())
+                && (ownerUser == null || !freelancerUser.getId().equals(ownerUser.getId()))) {
+            notifications.add(Notification.projectStatusChanged(
+                    freelancerUser,
+                    project,
+                    "프로젝트 상태가 변경되었습니다.",
+                    content
+            ));
+        }
+        notificationRepository.saveAll(notifications);
+    }
+
+    @Transactional
+    public void notifyReviewRequest(Project project) {
+        User ownerUser = project.getOwnerUser();
+        if (ownerUser == null || !Boolean.TRUE.equals(ownerUser.getActiveYn())) {
+            return;
+        }
+        notificationRepository.save(Notification.reviewRequest(
+                ownerUser,
+                project,
+                "리뷰를 남겨주세요.",
+                project.getTitle() + " 프로젝트가 완료되었습니다. 리뷰를 작성할 수 있습니다."
+        ));
     }
 
     private User requireActiveUser(Long currentUserId) {

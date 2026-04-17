@@ -7,6 +7,7 @@ import com.ieum.ansimdonghaeng.domain.freelancer.repository.FreelancerProfileRep
 import com.ieum.ansimdonghaeng.domain.project.entity.Project;
 import com.ieum.ansimdonghaeng.domain.project.entity.ProjectStatus;
 import com.ieum.ansimdonghaeng.domain.project.repository.ProjectRepository;
+import com.ieum.ansimdonghaeng.domain.notification.service.NotificationService;
 import com.ieum.ansimdonghaeng.domain.proposal.dto.request.ProposalCreateRequest;
 import com.ieum.ansimdonghaeng.domain.proposal.dto.response.ProposalCreateResponse;
 import com.ieum.ansimdonghaeng.domain.proposal.dto.response.ProposalDetailResponse;
@@ -33,6 +34,7 @@ public class ProposalService {
     private final ProjectRepository projectRepository;
     private final ProposalRepository proposalRepository;
     private final FreelancerProfileRepository freelancerProfileRepository;
+    private final NotificationService notificationService;
 
     // 사용자는 본인 프로젝트가 REQUESTED 상태일 때만 프리랜서에게 제안을 보낼 수 있다.
     @Transactional
@@ -47,7 +49,9 @@ public class ProposalService {
 
         Proposal proposal = Proposal.create(project, freelancerProfile, request.message());
         try {
-            return ProposalCreateResponse.from(proposalRepository.saveAndFlush(proposal));
+            Proposal savedProposal = proposalRepository.saveAndFlush(proposal);
+            notificationService.notifyProposalReceived(savedProposal);
+            return ProposalCreateResponse.from(savedProposal);
         } catch (DataIntegrityViolationException exception) {
             throw new CustomException(ErrorCode.PROPOSAL_DUPLICATE);
         }
@@ -100,6 +104,9 @@ public class ProposalService {
                 proposal.getId()
         );
         pendingProposals.forEach(pendingProposal -> pendingProposal.reject(now));
+
+        notificationService.notifyProposalAccepted(proposal);
+        notificationService.notifyProjectStatusChanged(project, proposal);
 
         return ProposalDetailResponse.from(proposal);
     }

@@ -1,6 +1,8 @@
 package com.ieum.ansimdonghaeng.domain.notification.entity;
 
 import com.ieum.ansimdonghaeng.domain.notice.entity.Notice;
+import com.ieum.ansimdonghaeng.domain.project.entity.Project;
+import com.ieum.ansimdonghaeng.domain.proposal.entity.Proposal;
 import com.ieum.ansimdonghaeng.domain.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -109,6 +111,52 @@ public class Notification {
                 .content(content)
                 .readYn(false)
                 .relatedNoticeId(notice.getId())
+                .build();
+    }
+
+    public static Notification proposalReceived(User user, Proposal proposal, String title, String content) {
+        return Notification.builder()
+                .user(user)
+                .notificationType(NotificationType.PROPOSAL_RECEIVED)
+                .title(title)
+                .content(content)
+                .readYn(false)
+                .relatedProjectId(proposal.getProject().getId())
+                .relatedProposalId(proposal.getId())
+                .build();
+    }
+
+    public static Notification proposalAccepted(User user, Proposal proposal, String title, String content) {
+        return Notification.builder()
+                .user(user)
+                .notificationType(NotificationType.PROPOSAL_ACCEPTED)
+                .title(title)
+                .content(content)
+                .readYn(false)
+                .relatedProjectId(proposal.getProject().getId())
+                .relatedProposalId(proposal.getId())
+                .build();
+    }
+
+    public static Notification projectStatusChanged(User user, Project project, String title, String content) {
+        return Notification.builder()
+                .user(user)
+                .notificationType(NotificationType.PROJECT_STATUS_CHANGED)
+                .title(title)
+                .content(content)
+                .readYn(false)
+                .relatedProjectId(project.getId())
+                .build();
+    }
+
+    public static Notification reviewRequest(User user, Project project, String title, String content) {
+        return Notification.builder()
+                .user(user)
+                .notificationType(NotificationType.REVIEW_REQUEST)
+                .title(title)
+                .content(content)
+                .readYn(false)
+                .relatedProjectId(project.getId())
                 .build();
     }
 

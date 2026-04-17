@@ -3,6 +3,7 @@ package com.ieum.ansimdonghaeng.domain.project.service;
 import com.ieum.ansimdonghaeng.common.exception.CustomException;
 import com.ieum.ansimdonghaeng.common.exception.ErrorCode;
 import com.ieum.ansimdonghaeng.domain.code.service.CodeValidationService;
+import com.ieum.ansimdonghaeng.domain.notification.service.NotificationService;
 import com.ieum.ansimdonghaeng.domain.project.dto.request.ProjectCancelRequest;
 import com.ieum.ansimdonghaeng.domain.project.dto.request.ProjectCreateRequest;
 import com.ieum.ansimdonghaeng.domain.project.dto.request.ProjectUpdateRequest;
@@ -14,6 +15,8 @@ import com.ieum.ansimdonghaeng.domain.project.entity.Project;
 import com.ieum.ansimdonghaeng.domain.project.entity.ProjectStatus;
 import com.ieum.ansimdonghaeng.domain.project.repository.ProjectRepository;
 import com.ieum.ansimdonghaeng.domain.project.repository.ProjectSummaryView;
+import com.ieum.ansimdonghaeng.domain.proposal.entity.Proposal;
+import com.ieum.ansimdonghaeng.domain.proposal.repository.ProposalRepository;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -29,6 +32,8 @@ public class ProjectServiceImpl implements ProjectService {
 
     private final ProjectRepository projectRepository;
     private final CodeValidationService codeValidationService;
+    private final ProposalRepository proposalRepository;
+    private final NotificationService notificationService;
 
     // 프로젝트 생성 시 기본 상태와 시간 범위를 함께 검증한다.
     @Override
@@ -116,8 +121,47 @@ public class ProjectServiceImpl implements ProjectService {
         return ProjectCancelResponse.from(project);
     }
 
+    @Override
+    @Transactional
+    public ProjectDetailResponse startProject(Long currentUserId, Long projectId) {
+        Project project = getOwnedProjectForUpdate(projectId, currentUserId);
+        if (!project.isAcceptedStatus()) {
+            throw new CustomException(ErrorCode.PROJECT_INVALID_STATUS);
+        }
+
+        project.start(LocalDateTime.now());
+        notificationService.notifyProjectStatusChanged(project, getAcceptedProposal(project.getId()));
+        return ProjectDetailResponse.from(project);
+    }
+
+    @Override
+    @Transactional
+    public ProjectDetailResponse completeProject(Long currentUserId, Long projectId) {
+        Project project = getOwnedProjectForUpdate(projectId, currentUserId);
+        if (!project.isInProgressStatus()) {
+            throw new CustomException(ErrorCode.PROJECT_INVALID_STATUS);
+        }
+
+        project.complete(LocalDateTime.now());
+        Proposal acceptedProposal = getAcceptedProposal(project.getId());
+        notificationService.notifyProjectStatusChanged(project, acceptedProposal);
+        notificationService.notifyReviewRequest(project);
+        return ProjectDetailResponse.from(project);
+    }
+
     private Project getOwnedProject(Long projectId, Long currentUserId) {
         Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PROJECT_NOT_FOUND));
+
+        if (!project.isOwnedBy(currentUserId)) {
+            throw new CustomException(ErrorCode.PROJECT_ACCESS_DENIED);
+        }
+
+        return project;
+    }
+
+    private Project getOwnedProjectForUpdate(Long projectId, Long currentUserId) {
+        Project project = projectRepository.findByIdForUpdate(projectId)
                 .orElseThrow(() -> new CustomException(ErrorCode.PROJECT_NOT_FOUND));
 
         if (!project.isOwnedBy(currentUserId)) {
@@ -142,5 +186,10 @@ public class ProjectServiceImpl implements ProjectService {
     private void validateProjectCodes(String projectTypeCode, String serviceRegionCode) {
         codeValidationService.validateProjectTypeCode(projectTypeCode, "projectTypeCode");
         codeValidationService.validateRegionCode(serviceRegionCode, "serviceRegionCode");
+    }
+
+    private Proposal getAcceptedProposal(Long projectId) {
+        return proposalRepository.findAcceptedProposalByProjectId(projectId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PROPOSAL_NOT_FOUND));
     }
 }

@@ -12,6 +12,7 @@ import com.ieum.ansimdonghaeng.domain.freelancer.entity.FreelancerProfile;
 import com.ieum.ansimdonghaeng.domain.freelancer.repository.FreelancerProfileRepository;
 import com.ieum.ansimdonghaeng.domain.project.entity.Project;
 import com.ieum.ansimdonghaeng.domain.project.repository.ProjectRepository;
+import com.ieum.ansimdonghaeng.domain.notification.repository.NotificationRepository;
 import com.ieum.ansimdonghaeng.domain.proposal.entity.Proposal;
 import com.ieum.ansimdonghaeng.domain.proposal.entity.ProposalStatus;
 import com.ieum.ansimdonghaeng.domain.proposal.repository.ProposalRepository;
@@ -59,6 +60,9 @@ class ProposalControllerIntegrationTest {
     private ProposalRepository proposalRepository;
 
     @Autowired
+    private NotificationRepository notificationRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Autowired
@@ -66,6 +70,7 @@ class ProposalControllerIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        notificationRepository.deleteAll();
         proposalRepository.deleteAll();
         projectRepository.deleteAll();
         freelancerProfileRepository.deleteAll();

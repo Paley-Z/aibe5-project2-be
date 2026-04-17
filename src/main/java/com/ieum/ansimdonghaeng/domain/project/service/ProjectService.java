@@ -25,4 +25,8 @@ public interface ProjectService {
 
     // 현재 로그인한 사용자가 소유한 REQUESTED 프로젝트를 취소한다.
     ProjectCancelResponse cancelProject(Long currentUserId, Long projectId, ProjectCancelRequest request);
+
+    ProjectDetailResponse startProject(Long currentUserId, Long projectId);
+
+    ProjectDetailResponse completeProject(Long currentUserId, Long projectId);
 }

@@ -116,4 +116,26 @@ public class ProjectController {
         );
         return ResponseEntity.ok(ApiResponse.success(response));
     }
+
+    @PatchMapping("/{projectId}/start")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<ApiResponse<ProjectDetailResponse>> startProject(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long projectId
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                projectService.startProject(AuthenticatedUserSupport.currentUserId(userDetails), projectId)
+        ));
+    }
+
+    @PatchMapping("/{projectId}/complete")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<ApiResponse<ProjectDetailResponse>> completeProject(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long projectId
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                projectService.completeProject(AuthenticatedUserSupport.currentUserId(userDetails), projectId)
+        ));
+    }
 }
