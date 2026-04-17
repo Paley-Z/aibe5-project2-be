@@ -2,6 +2,7 @@ package com.ieum.ansimdonghaeng.domain.review.entity;
 
 import com.ieum.ansimdonghaeng.common.audit.BaseAuditEntity;
 import com.ieum.ansimdonghaeng.domain.project.entity.Project;
+import com.ieum.ansimdonghaeng.domain.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -9,6 +10,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Lob;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.SequenceGenerator;
@@ -41,6 +43,10 @@ public class Review extends BaseAuditEntity {
     @JoinColumn(name = "PROJECT_ID", nullable = false, unique = true)
     private Project project;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "REVIEWER_USER_ID", nullable = false)
+    private User reviewerUser;
+
     @Min(1)
     @Max(5)
     @Column(name = "RATING", nullable = false)
@@ -55,16 +61,18 @@ public class Review extends BaseAuditEntity {
     private String blindedYn;
 
     @Builder
-    private Review(Project project, Integer rating, String content, String blindedYn) {
+    private Review(Project project, User reviewerUser, Integer rating, String content, String blindedYn) {
         this.project = project;
+        this.reviewerUser = reviewerUser;
         this.rating = rating;
         this.content = content;
         this.blindedYn = blindedYn;
     }
 
-    public static Review create(Project project, Integer rating, String content) {
+    public static Review create(Project project, User reviewerUser, Integer rating, String content) {
         return Review.builder()
             .project(project)
+            .reviewerUser(reviewerUser)
             .rating(rating)
             .content(content)
             .blindedYn("N")
