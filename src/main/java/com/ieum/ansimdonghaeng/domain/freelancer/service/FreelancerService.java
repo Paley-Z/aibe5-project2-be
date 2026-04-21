@@ -22,6 +22,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
@@ -85,9 +86,21 @@ public class FreelancerService {
     }
 
     // 공개 가능한 프리랜서만 페이지 단위로 조회한다.
-    public FreelancerListResponse getFreelancers(int page, int size) {
+    public FreelancerListResponse getFreelancers(String keyword, String projectType, String region, int page, int size) {
+        String normalizedKeyword = normalize(keyword);
+        String normalizedProjectType = normalize(projectType);
+        String normalizedRegion = normalize(region);
+
+        codeValidationService.validateProjectTypeCode(normalizedProjectType, "projectType");
+        codeValidationService.validateRegionCode(normalizedRegion, "region");
+
         Page<FreelancerProfile> freelancerPage =
-                freelancerProfileRepository.findPublicFreelancers(PageRequest.of(page, size));
+                freelancerProfileRepository.findPublicFreelancers(
+                        normalizedKeyword,
+                        normalizedProjectType,
+                        normalizedRegion,
+                        PageRequest.of(page, size)
+                );
         return FreelancerListResponse.from(freelancerPage);
     }
 
@@ -165,5 +178,9 @@ public class FreelancerService {
                 "availableTimeSlotCodes"
         );
         codeValidationService.validateProjectTypeCodes(request.projectTypeCodes(), "projectTypeCodes");
+    }
+
+    private String normalize(String value) {
+        return StringUtils.hasText(value) ? value.trim() : null;
     }
 }

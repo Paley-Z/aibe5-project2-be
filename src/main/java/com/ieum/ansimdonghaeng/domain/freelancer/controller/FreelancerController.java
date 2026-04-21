@@ -28,10 +28,15 @@ public class FreelancerController {
     @Operation(summary = "프리랜서 목록 조회")
     @GetMapping
     public ResponseEntity<ApiResponse<FreelancerListResponse>> getFreelancers(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String projectType,
+            @RequestParam(required = false) String region,
             @PositiveOrZero @RequestParam(defaultValue = "0") int page,
             @Positive @RequestParam(defaultValue = "10") int size
     ) {
-        return ResponseEntity.ok(ApiResponse.success(freelancerService.getFreelancers(page, size)));
+        return ResponseEntity.ok(ApiResponse.success(
+                freelancerService.getFreelancers(keyword, projectType, region, page, size)
+        ));
     }
 
     // 공개 가능한 프리랜서 상세 정보만 조회할 수 있다.
