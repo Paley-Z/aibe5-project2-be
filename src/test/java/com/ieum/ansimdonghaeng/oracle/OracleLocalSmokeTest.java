@@ -21,7 +21,6 @@ import java.util.Map;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -40,7 +39,6 @@ import org.springframework.transaction.annotation.Transactional;
 @AutoConfigureMockMvc
 @ActiveProfiles("local")
 @Transactional
-@EnabledIfSystemProperty(named = "oracle.smoke", matches = "true")
 @TestPropertySource(properties = {
         "spring.jpa.hibernate.ddl-auto=validate",
         "app.file-storage.base-dir=./target/oracle-smoke-storage"
