@@ -180,10 +180,7 @@ class OracleLocalSmokeTest {
 
         JsonNode verification = dataFrom(postJson(
                 "/api/v1/freelancers/me/verifications",
-                Map.of(
-                        "type", "LICENSE",
-                        "requestMessage", "oracle-verification-" + suffix
-                ),
+                Map.of("type", "LICENSE"),
                 freelancerTokens.accessToken()
         ));
         Long verificationId = verification.path("verificationId").asLong();
@@ -304,6 +301,11 @@ class OracleLocalSmokeTest {
                 adminTokens.accessToken()
         ));
         assertThat(adminVerificationList.path("content").isArray()).isTrue();
+        JsonNode adminVerificationFullList = dataFrom(getAuthorized(
+                "/api/v1/admin/verifications?page=0&size=50",
+                adminTokens.accessToken()
+        ));
+        assertThat(adminVerificationFullList.path("content").isArray()).isTrue();
         dataFrom(getAuthorized("/api/v1/admin/verifications/" + verificationId, adminTokens.accessToken()));
 
         JsonNode approvedVerification = dataFrom(patchJson(
