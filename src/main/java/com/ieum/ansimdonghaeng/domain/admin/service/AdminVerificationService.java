@@ -118,11 +118,10 @@ public class AdminVerificationService {
 
         List<VerificationListRow> rows = query.getResultList();
         List<Long> verificationIds = rows.stream().map(VerificationListRow::verificationId).toList();
-        Map<Long, String> descriptionSummaries = verificationRepository.findAllById(verificationIds).stream()
-                .collect(java.util.stream.Collectors.toMap(
-                        Verification::getId,
-                        verification -> summarize(verification.getDescription())
-                ));
+        Map<Long, String> descriptionSummaries = new HashMap<>();
+        verificationRepository.findAllById(verificationIds).forEach(verification ->
+                descriptionSummaries.put(verification.getId(), summarize(verification.getDescription()))
+        );
         Set<Long> verificationIdsWithFiles = new HashSet<>(
                 verificationIds.isEmpty() ? List.of() : verificationFileRepository.findVerificationIdsWithFiles(verificationIds)
         );

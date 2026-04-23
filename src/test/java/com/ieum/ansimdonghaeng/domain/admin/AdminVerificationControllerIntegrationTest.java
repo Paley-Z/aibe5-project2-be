@@ -49,6 +49,27 @@ class AdminVerificationControllerIntegrationTest extends AdminIntegrationTestSup
     }
 
     @Test
+    void getVerificationsSuccessWhenDescriptionIsNull() throws Exception {
+        User admin = saveUser("admin-null@test.com", "admin", UserRole.ADMIN);
+        User freelancerUser = saveUser("freelancer-null@test.com", "freelancer", UserRole.FREELANCER);
+        var profile = saveFreelancerProfile(freelancerUser, false, true);
+        Verification verification = verificationRepository.saveAndFlush(Verification.create(
+                profile,
+                VerificationType.BASIC_IDENTITY,
+                null,
+                java.time.LocalDateTime.of(2026, 4, 17, 10, 0)
+        ));
+
+        mockMvc.perform(get("/api/v1/admin/verifications")
+                        .with(adminPrincipal(admin))
+                        .param("status", "PENDING"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.totalElements").value(1))
+                .andExpect(jsonPath("$.data.content[0].verificationId").value(verification.getId()))
+                .andExpect(jsonPath("$.data.content[0].descriptionSummary").value(org.hamcrest.Matchers.nullValue()));
+    }
+
+    @Test
     void approveVerificationSuccess() throws Exception {
         User admin = saveUser("admin@test.com", "admin", UserRole.ADMIN);
         User freelancerUser = saveUser("freelancer@test.com", "freelancer", UserRole.FREELANCER);
