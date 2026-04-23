@@ -80,3 +80,4 @@ app:
 
 mail:
   enabled: ${MAIL_ENABLED:false}
+  from: ${MAIL_FROM:${MAIL_USERNAME:}}
