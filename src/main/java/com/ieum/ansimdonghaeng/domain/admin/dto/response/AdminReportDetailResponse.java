@@ -23,6 +23,8 @@ public record AdminReportDetailResponse(
             Integer rating,
             Boolean blindedYn,
             AdminUserSummaryResponse writer,
+            String reviewDirection,
+            AdminUserSummaryResponse targetUser,
             AdminFreelancerSummaryResponse targetFreelancer,
             LocalDateTime createdAt
     ) {

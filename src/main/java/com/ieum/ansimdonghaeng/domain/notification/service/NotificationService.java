@@ -120,16 +120,28 @@ public class NotificationService {
     }
 
     @Transactional
-    public void notifyReviewRequest(Project project) {
+    public void notifyReviewRequest(Project project, Proposal acceptedProposal) {
         User ownerUser = project.getOwnerUser();
-        if (ownerUser == null || !Boolean.TRUE.equals(ownerUser.getActiveYn())) {
+        if (ownerUser != null && Boolean.TRUE.equals(ownerUser.getActiveYn())) {
+            notificationRepository.save(Notification.reviewRequest(
+                    ownerUser,
+                    project,
+                    "리뷰를 남겨주세요.",
+                    project.getTitle() + " 프로젝트가 완료되었습니다. 리뷰를 작성할 수 있습니다."
+            ));
+        }
+
+        User freelancerUser = acceptedProposal.getFreelancerProfile().getUser();
+        if (freelancerUser == null
+                || !Boolean.TRUE.equals(freelancerUser.getActiveYn())
+                || (ownerUser != null && freelancerUser.getId().equals(ownerUser.getId()))) {
             return;
         }
         notificationRepository.save(Notification.reviewRequest(
-                ownerUser,
+                freelancerUser,
                 project,
                 "리뷰를 남겨주세요.",
-                project.getTitle() + " 프로젝트가 완료되었습니다. 리뷰를 작성할 수 있습니다."
+                project.getTitle() + " 프로젝트가 완료되었습니다. 요청자 리뷰를 작성할 수 있습니다."
         ));
     }
 

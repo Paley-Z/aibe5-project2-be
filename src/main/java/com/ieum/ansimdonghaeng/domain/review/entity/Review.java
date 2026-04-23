@@ -14,9 +14,9 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import java.util.Collection;
@@ -32,7 +32,13 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 @Entity
-@Table(name = "REVIEW")
+@Table(
+        name = "REVIEW",
+        uniqueConstraints = @UniqueConstraint(
+                name = "UK_REVIEW_PROJECT_REVIEWER",
+                columnNames = {"PROJECT_ID", "REVIEWER_USER_ID"}
+        )
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @SequenceGenerator(
@@ -47,8 +53,8 @@ public class Review extends BaseAuditEntity {
     @Column(name = "REVIEW_ID")
     private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "PROJECT_ID", nullable = false, unique = true)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "PROJECT_ID", nullable = false)
     private Project project;
 
     @Column(name = "REVIEWER_USER_ID", nullable = false)
