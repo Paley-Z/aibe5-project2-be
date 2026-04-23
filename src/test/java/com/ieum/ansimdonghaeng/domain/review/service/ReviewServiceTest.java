@@ -95,7 +95,7 @@ class ReviewServiceTest {
         acceptedProposal.accept(LocalDateTime.of(2026, 4, 19, 10, 0));
 
         when(projectRepository.findById(projectId)).thenReturn(Optional.of(project));
-        when(reviewRepository.existsByProject_Id(projectId)).thenReturn(false);
+        when(reviewRepository.existsByProject_IdAndReviewerUserId(projectId, ownerUserId)).thenReturn(false);
         when(proposalRepository.findAcceptedProposalByProjectId(projectId)).thenReturn(Optional.of(acceptedProposal));
         when(reviewRepository.saveAndFlush(any()))
                 .thenThrow(new DataIntegrityViolationException("unique constraint"));

@@ -24,6 +24,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -177,11 +178,43 @@ public class AdminReportService {
                         project.getTitle(),
                         review.getRating(),
                         review.isBlinded(),
-                        AdminResponseMapper.toUserSummary(project.getOwnerUser()),
+                        AdminResponseMapper.toUserSummary(review.getReviewerUser()),
+                        reviewDirection(review, acceptedProposal),
+                        targetUser(review, acceptedProposal),
                         acceptedProposal != null ? AdminResponseMapper.toFreelancerSummary(acceptedProposal.getFreelancerProfile()) : null,
                         review.getCreatedAt()
                 )
         );
+    }
+
+    private String reviewDirection(Review review, Proposal acceptedProposal) {
+        if (Objects.equals(review.getReviewerUserId(), review.getProject().getOwnerUserId())) {
+            return "USER_TO_FREELANCER";
+        }
+        if (isAcceptedFreelancerReview(review, acceptedProposal)) {
+            return "FREELANCER_TO_USER";
+        }
+        return null;
+    }
+
+    private AdminUserSummaryResponse targetUser(Review review, Proposal acceptedProposal) {
+        if (Objects.equals(review.getReviewerUserId(), review.getProject().getOwnerUserId())) {
+            return acceptedProposal == null
+                    ? null
+                    : AdminResponseMapper.toUserSummary(acceptedProposal.getFreelancerProfile().getUser());
+        }
+        if (isAcceptedFreelancerReview(review, acceptedProposal)) {
+            return AdminResponseMapper.toUserSummary(review.getProject().getOwnerUser());
+        }
+        return null;
+    }
+
+    private boolean isAcceptedFreelancerReview(Review review, Proposal acceptedProposal) {
+        return acceptedProposal != null
+                && Objects.equals(
+                        review.getReviewerUserId(),
+                        acceptedProposal.getFreelancerProfile().getUser().getId()
+                );
     }
 
     private void appendCondition(StringBuilder selectBuilder, StringBuilder countBuilder, String condition) {

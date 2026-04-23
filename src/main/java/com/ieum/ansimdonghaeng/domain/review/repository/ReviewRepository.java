@@ -20,10 +20,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long>, JpaSpecif
     @Override
     Page<Review> findAll(Specification<Review> spec, Pageable pageable);
 
-    boolean existsByProject_Id(Long projectId);
-
-    @EntityGraph(attributePaths = {"project", "reviewerUser", "tags"})
-    Optional<Review> findByProject_Id(Long projectId);
+    boolean existsByProject_IdAndReviewerUserId(Long projectId, Long reviewerUserId);
 
     @EntityGraph(attributePaths = {"project", "project.ownerUser", "reviewerUser", "tags"})
     Page<Review> findAllByReviewerUserIdOrderByCreatedAtDescIdDesc(Long reviewerUserId, Pageable pageable);
@@ -42,6 +39,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long>, JpaSpecif
               and freelancerProfile.publicYn = true
               and user.activeYn = true
               and user.roleCode = 'ROLE_FREELANCER'
+              and review.reviewerUserId = project.ownerUserId
               and review.blindedYn = 'N'
             order by review.createdAt desc, review.id desc
             """)

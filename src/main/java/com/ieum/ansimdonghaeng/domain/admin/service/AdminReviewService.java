@@ -44,6 +44,11 @@ public class AdminReviewService {
                     review.id,
                     project.id,
                     project.title,
+                    writer.id,
+                    writer.name,
+                    writer.email,
+                    writer.roleCode,
+                    writer.activeYn,
                     owner.id,
                     owner.name,
                     owner.email,
@@ -55,6 +60,7 @@ public class AdminReviewService {
                 )
                 from Review review
                 join review.project project
+                join review.reviewerUser writer
                 join project.ownerUser owner
                 where 1 = 1
                 """);
@@ -62,6 +68,7 @@ public class AdminReviewService {
                 select count(review.id)
                 from Review review
                 join review.project project
+                join review.reviewerUser writer
                 join project.ownerUser owner
                 where 1 = 1
                 """);
@@ -74,6 +81,8 @@ public class AdminReviewService {
             appendCondition(selectBuilder, countBuilder, """
                      and (
                         lower(project.title) like :keyword
+                        or lower(writer.name) like :keyword
+                        or lower(writer.email) like :keyword
                         or lower(owner.name) like :keyword
                         or lower(owner.email) like :keyword
                      )
@@ -116,6 +125,8 @@ public class AdminReviewService {
                             row.projectId(),
                             row.projectTitle(),
                             row.writer(),
+                            row.reviewDirection(acceptedProposal),
+                            row.targetUser(acceptedProposal),
                             acceptedProposal != null ? AdminResponseMapper.toFreelancerSummary(acceptedProposal.getFreelancerProfile()) : null,
                             row.rating(),
                             row.blinded(),
@@ -165,6 +176,11 @@ public class AdminReviewService {
             String writerEmail,
             String writerRoleCode,
             Boolean writerActiveYn,
+            Long ownerUserId,
+            String ownerName,
+            String ownerEmail,
+            String ownerRoleCode,
+            Boolean ownerActiveYn,
             Integer rating,
             String blindedYn,
             LocalDateTime createdAt
@@ -177,6 +193,40 @@ public class AdminReviewService {
                     writerRoleCode,
                     writerActiveYn
             );
+        }
+
+        private AdminUserSummaryResponse owner() {
+            return new AdminUserSummaryResponse(
+                    ownerUserId,
+                    ownerName,
+                    ownerEmail,
+                    ownerRoleCode,
+                    ownerActiveYn
+            );
+        }
+
+        private String reviewDirection(Proposal acceptedProposal) {
+            if (writerUserId.equals(ownerUserId)) {
+                return "USER_TO_FREELANCER";
+            }
+            if (acceptedProposal != null
+                    && writerUserId.equals(acceptedProposal.getFreelancerProfile().getUser().getId())) {
+                return "FREELANCER_TO_USER";
+            }
+            return null;
+        }
+
+        private AdminUserSummaryResponse targetUser(Proposal acceptedProposal) {
+            if (writerUserId.equals(ownerUserId)) {
+                return acceptedProposal == null
+                        ? null
+                        : AdminResponseMapper.toUserSummary(acceptedProposal.getFreelancerProfile().getUser());
+            }
+            if (acceptedProposal != null
+                    && writerUserId.equals(acceptedProposal.getFreelancerProfile().getUser().getId())) {
+                return owner();
+            }
+            return null;
         }
 
         private boolean blinded() {

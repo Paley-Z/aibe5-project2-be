@@ -147,7 +147,7 @@ public class ProjectServiceImpl implements ProjectService {
 
         project.complete(LocalDateTime.now());
         notificationService.notifyProjectStatusChanged(project, acceptedProposal);
-        notificationService.notifyReviewRequest(project);
+        notificationService.notifyReviewRequest(project, acceptedProposal);
         return ProjectDetailResponse.from(project);
     }
 

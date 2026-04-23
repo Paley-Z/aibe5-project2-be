@@ -52,20 +52,42 @@ public class ReviewService {
         if (!project.isOwnedBy(currentUserId)) {
             throw new CustomException(ErrorCode.PROJECT_ACCESS_DENIED);
         }
+        Proposal acceptedProposal = getAcceptedProposal(projectId);
+        return createParticipantReview(projectId, project, currentUserId, request, acceptedProposal);
+    }
+
+    @Transactional
+    public ReviewDetailResponse createRequesterReview(Long currentUserId, Long projectId, ReviewCreateRequest request) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PROJECT_NOT_FOUND));
+        Proposal acceptedProposal = getAcceptedProposal(projectId);
+
+        Long assignedFreelancerUserId = acceptedProposal.getFreelancerProfile().getUser().getId();
+        if (!assignedFreelancerUserId.equals(currentUserId)) {
+            throw new CustomException(ErrorCode.PROJECT_ACCESS_DENIED);
+        }
+
+        return createParticipantReview(projectId, project, currentUserId, request, acceptedProposal);
+    }
+
+    private ReviewDetailResponse createParticipantReview(Long projectId,
+                                                         Project project,
+                                                         Long reviewerUserId,
+                                                         ReviewCreateRequest request,
+                                                         Proposal acceptedProposal) {
         if (project.getStatus() != ProjectStatus.COMPLETED) {
             throw new CustomException(ErrorCode.REVIEW_NOT_ELIGIBLE);
         }
-        if (reviewRepository.existsByProject_Id(projectId)) {
+        if (reviewRepository.existsByProject_IdAndReviewerUserId(projectId, reviewerUserId)) {
             throw new CustomException(ErrorCode.REVIEW_ALREADY_EXISTS);
         }
 
-        Proposal acceptedProposal = getAcceptedProposal(projectId);
         Review savedReview;
         try {
             savedReview = reviewRepository.saveAndFlush(
                     Review.create(
                             project,
-                            currentUserId,
+                            reviewerUserId,
                             request.rating(),
                             request.content(),
                             normalizeTagCodes(request.tagCodes())
@@ -132,7 +154,26 @@ public class ReviewService {
     public PageResponse<ReviewSummaryResponse> getPublicFreelancerReviews(Long freelancerProfileId, Pageable pageable) {
         freelancerService.getPublicFreelancerProfile(freelancerProfileId);
         Page<Review> reviewPage = reviewRepository.findPublicReviewsByFreelancerProfileId(freelancerProfileId, pageable);
-        return PageResponse.from(reviewPage.map(ReviewSummaryResponse::from));
+        if (reviewPage.isEmpty()) {
+            return PageResponse.from(reviewPage.map(ReviewSummaryResponse::from));
+        }
+
+        List<Long> projectIds = reviewPage.getContent().stream()
+                .map(review -> review.getProject().getId())
+                .distinct()
+                .toList();
+        Map<Long, Proposal> acceptedProposalByProjectId = proposalRepository.findAcceptedProposalsByProjectIds(projectIds)
+                .stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        proposal -> proposal.getProject().getId(),
+                        Function.identity()
+                ));
+
+        return PageResponse.from(reviewPage.map(review -> ReviewSummaryResponse.from(
+                review,
+                acceptedProposalByProjectId.get(review.getProject().getId()),
+                false
+        )));
     }
 
     public List<ReviewTagCodeResponse> getActiveTagCodes() {

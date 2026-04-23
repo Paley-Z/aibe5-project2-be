@@ -87,6 +87,79 @@ class ReviewControllerIntegrationTest extends AdminIntegrationTestSupport {
     }
 
     @Test
+    void freelancerCanReviewRequesterForCompletedAssignedProject() throws Exception {
+        User owner = saveUser("owner-reverse@test.com", "owner", UserRole.USER);
+        User freelancerUser = saveUser("freelancer-reverse@test.com", "freelancer", UserRole.FREELANCER);
+        var freelancerProfile = saveFreelancerProfile(freelancerUser, true, true);
+        var project = saveProject(owner, ProjectStatus.COMPLETED);
+        saveAcceptedProposal(project, freelancerProfile);
+
+        mockMvc.perform(post("/api/v1/projects/{projectId}/reviews", project.getId())
+                        .with(userPrincipal(owner))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "rating", 5,
+                                "tagCodes", List.of("KIND"),
+                                "content", "great freelancer"
+                        ))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.reviewDirection").value("USER_TO_FREELANCER"))
+                .andExpect(jsonPath("$.data.revieweeUserId").value(freelancerUser.getId()));
+
+        MvcResult reverseResult = mockMvc.perform(post("/api/v1/projects/{projectId}/requester-reviews", project.getId())
+                        .with(freelancerPrincipal(freelancerUser))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "rating", 4,
+                                "tagCodes", List.of("PUNCTUAL"),
+                                "content", "clear request"
+                        ))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.reviewDirection").value("FREELANCER_TO_USER"))
+                .andExpect(jsonPath("$.data.reviewerUserId").value(freelancerUser.getId()))
+                .andExpect(jsonPath("$.data.revieweeUserId").value(owner.getId()))
+                .andExpect(jsonPath("$.data.rating").value(4))
+                .andReturn();
+
+        long reverseReviewId = objectMapper.readTree(reverseResult.getResponse().getContentAsString())
+                .path("data")
+                .path("reviewId")
+                .asLong();
+
+        mockMvc.perform(get("/api/v1/users/me/reviews").with(freelancerPrincipal(freelancerUser)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.totalElements").value(1))
+                .andExpect(jsonPath("$.data.content[0].reviewId").value(reverseReviewId))
+                .andExpect(jsonPath("$.data.content[0].reviewDirection").value("FREELANCER_TO_USER"));
+
+        mockMvc.perform(get("/api/v1/freelancers/{freelancerProfileId}/reviews", freelancerProfile.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.totalElements").value(1))
+                .andExpect(jsonPath("$.data.content[0].reviewDirection").value("USER_TO_FREELANCER"));
+    }
+
+    @Test
+    void requesterReviewFailsForUnassignedFreelancer() throws Exception {
+        User owner = saveUser("owner-denied@test.com", "owner", UserRole.USER);
+        User assignedFreelancerUser = saveUser("assigned-freelancer@test.com", "assigned", UserRole.FREELANCER);
+        User otherFreelancerUser = saveUser("other-freelancer@test.com", "other", UserRole.FREELANCER);
+        var freelancerProfile = saveFreelancerProfile(assignedFreelancerUser, true, true);
+        var project = saveProject(owner, ProjectStatus.COMPLETED);
+        saveAcceptedProposal(project, freelancerProfile);
+
+        mockMvc.perform(post("/api/v1/projects/{projectId}/requester-reviews", project.getId())
+                        .with(freelancerPrincipal(otherFreelancerUser))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "rating", 4,
+                                "tagCodes", List.of("KIND"),
+                                "content", "not assigned"
+                        ))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error.code").value("PROJECT_403_1"));
+    }
+
+    @Test
     void publicFreelancerReviewsReturnOnlyVisibleAcceptedReviews() throws Exception {
         User owner = saveUser("owner@test.com", "owner", UserRole.USER);
         User freelancerUser = saveUser("freelancer@test.com", "freelancer", UserRole.FREELANCER);

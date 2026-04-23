@@ -7,6 +7,8 @@ public record AdminReviewListItemResponse(
         Long projectId,
         String projectTitle,
         AdminUserSummaryResponse writer,
+        String reviewDirection,
+        AdminUserSummaryResponse targetUser,
         AdminFreelancerSummaryResponse targetFreelancer,
         Integer rating,
         Boolean blindedYn,

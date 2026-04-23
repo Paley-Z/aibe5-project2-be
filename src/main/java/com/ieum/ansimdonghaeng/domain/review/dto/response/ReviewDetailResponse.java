@@ -14,6 +14,10 @@ public record ReviewDetailResponse(
         String freelancerName,
         Long reviewerUserId,
         String reviewerName,
+        String reviewDirection,
+        Long revieweeUserId,
+        String revieweeName,
+        String revieweeRoleCode,
         Integer rating,
         List<String> tagCodes,
         String content,
@@ -32,6 +36,10 @@ public record ReviewDetailResponse(
                 acceptedProposal == null ? null : acceptedProposal.getFreelancerProfile().getUser().getName(),
                 review.getReviewerUserId(),
                 review.getReviewerUser() != null ? review.getReviewerUser().getName() : null,
+                ReviewResponseParticipantMapper.reviewDirection(review, acceptedProposal),
+                ReviewResponseParticipantMapper.revieweeUserId(review, acceptedProposal),
+                ReviewResponseParticipantMapper.revieweeName(review, acceptedProposal),
+                ReviewResponseParticipantMapper.revieweeRoleCode(review, acceptedProposal),
                 review.getRating(),
                 review.getTags().stream()
                         .map(tag -> tag.getTagCode())

@@ -55,8 +55,23 @@ public class ReviewController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(review));
     }
 
+    @PostMapping("/projects/{projectId}/requester-reviews")
+    @PreAuthorize("hasRole('FREELANCER')")
+    public ResponseEntity<ApiResponse<ReviewDetailResponse>> createRequesterReview(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long projectId,
+            @Valid @RequestBody ReviewCreateRequest request
+    ) {
+        ReviewDetailResponse review = reviewService.createRequesterReview(
+                AuthenticatedUserSupport.currentUserId(userDetails),
+                projectId,
+                request
+        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(review));
+    }
+
     @GetMapping("/users/me/reviews")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER','FREELANCER')")
     public ResponseEntity<ApiResponse<PageResponse<ReviewSummaryResponse>>> getMyReviews(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PositiveOrZero @RequestParam(defaultValue = "0") int page,
@@ -71,7 +86,7 @@ public class ReviewController {
     }
 
     @GetMapping("/users/me/reviews/{reviewId}")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER','FREELANCER')")
     public ResponseEntity<ApiResponse<ReviewDetailResponse>> getMyReview(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long reviewId
@@ -82,7 +97,7 @@ public class ReviewController {
     }
 
     @PatchMapping("/users/me/reviews/{reviewId}")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER','FREELANCER')")
     public ResponseEntity<ApiResponse<ReviewDetailResponse>> updateMyReview(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long reviewId,
@@ -94,7 +109,7 @@ public class ReviewController {
     }
 
     @DeleteMapping("/users/me/reviews/{reviewId}")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER','FREELANCER')")
     public ResponseEntity<ApiResponse<ReviewDeleteResponse>> deleteMyReview(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long reviewId
