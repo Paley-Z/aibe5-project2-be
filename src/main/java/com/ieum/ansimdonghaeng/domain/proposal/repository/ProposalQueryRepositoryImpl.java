@@ -5,6 +5,7 @@ import static com.ieum.ansimdonghaeng.domain.project.entity.QProject.project;
 import static com.ieum.ansimdonghaeng.domain.proposal.entity.QProposal.proposal;
 import static com.ieum.ansimdonghaeng.domain.user.entity.QUser.user;
 
+import com.ieum.ansimdonghaeng.domain.project.entity.ProjectStatus;
 import com.ieum.ansimdonghaeng.domain.proposal.entity.ProposalStatus;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
@@ -23,8 +24,12 @@ public class ProposalQueryRepositoryImpl implements ProposalQueryRepository {
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public Page<ProposalSummaryView> findFreelancerProposals(Long freelancerProfileId, ProposalStatus status, Pageable pageable) {
+    public Page<ProposalSummaryView> findFreelancerProposals(Long freelancerProfileId,
+                                                             ProposalStatus status,
+                                                             ProjectStatus projectStatus,
+                                                             Pageable pageable) {
         BooleanExpression statusCondition = status == null ? null : proposal.status.eq(status);
+        BooleanExpression projectStatusCondition = projectStatus == null ? null : project.status.eq(projectStatus);
 
         List<ProposalSummaryView> content = queryFactory
                 .select(Projections.constructor(
@@ -42,7 +47,7 @@ public class ProposalQueryRepositoryImpl implements ProposalQueryRepository {
                 ))
                 .from(proposal)
                 .join(proposal.project, project)
-                .where(proposal.freelancerProfile.id.eq(freelancerProfileId), statusCondition)
+                .where(proposal.freelancerProfile.id.eq(freelancerProfileId), statusCondition, projectStatusCondition)
                 .orderBy(proposal.createdAt.desc(), proposal.id.desc())
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
@@ -51,7 +56,8 @@ public class ProposalQueryRepositoryImpl implements ProposalQueryRepository {
         Long total = queryFactory
                 .select(proposal.count())
                 .from(proposal)
-                .where(proposal.freelancerProfile.id.eq(freelancerProfileId), statusCondition)
+                .join(proposal.project, project)
+                .where(proposal.freelancerProfile.id.eq(freelancerProfileId), statusCondition, projectStatusCondition)
                 .fetchOne();
 
         return new PageImpl<>(content, pageable, total == null ? 0 : total);

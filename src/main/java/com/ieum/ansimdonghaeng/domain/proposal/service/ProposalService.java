@@ -73,11 +73,16 @@ public class ProposalService {
         return PageResponse.from(proposalPage.map(ProjectProposalSummaryResponse::from));
     }
 
-    public ProposalListResponse getMyProposals(Long currentUserId, ProposalStatus status, int page, int size) {
+    public ProposalListResponse getMyProposals(Long currentUserId,
+                                               ProposalStatus status,
+                                               ProjectStatus projectStatus,
+                                               int page,
+                                               int size) {
         FreelancerProfile currentFreelancerProfile = getCurrentFreelancerProfile(currentUserId);
         Page<ProposalSummaryView> proposalPage = proposalRepository.findFreelancerProposals(
                 currentFreelancerProfile.getId(),
                 status,
+                projectStatus,
                 PageRequest.of(page, size)
         );
         return ProposalListResponse.from(proposalPage);

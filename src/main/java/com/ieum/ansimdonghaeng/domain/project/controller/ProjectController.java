@@ -71,14 +71,21 @@ public class ProjectController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    @Operation(summary = "List recruiting projects")
+    @Operation(summary = "List freelancer-visible projects")
     @GetMapping
     @PreAuthorize("hasRole('FREELANCER')")
-    public ResponseEntity<ApiResponse<ProjectListResponse>> getRecruitingProjects(
+    public ResponseEntity<ApiResponse<ProjectListResponse>> getFreelancerProjects(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestParam(required = false) ProjectStatus status,
             @PositiveOrZero @RequestParam(defaultValue = "0") int page,
             @Positive @RequestParam(defaultValue = "10") int size
     ) {
-        ProjectListResponse response = projectService.getRecruitingProjects(page, size);
+        ProjectListResponse response = projectService.getFreelancerProjects(
+                AuthenticatedUserSupport.currentUserId(userDetails),
+                status,
+                page,
+                size
+        );
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 

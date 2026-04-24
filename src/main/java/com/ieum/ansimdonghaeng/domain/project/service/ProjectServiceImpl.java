@@ -17,6 +17,7 @@ import com.ieum.ansimdonghaeng.domain.project.entity.ProjectStatus;
 import com.ieum.ansimdonghaeng.domain.project.repository.ProjectRepository;
 import com.ieum.ansimdonghaeng.domain.project.repository.ProjectSummaryView;
 import com.ieum.ansimdonghaeng.domain.proposal.entity.Proposal;
+import com.ieum.ansimdonghaeng.domain.proposal.entity.ProposalStatus;
 import com.ieum.ansimdonghaeng.domain.proposal.repository.ProposalRepository;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
@@ -66,9 +67,13 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    public ProjectListResponse getRecruitingProjects(int page, int size) {
+    public ProjectListResponse getFreelancerProjects(Long currentUserId, ProjectStatus status, int page, int size) {
         PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<ProjectSummaryView> projectPage = projectRepository.findRecruitingProjects(pageable);
+        Page<ProjectSummaryView> projectPage = projectRepository.findFreelancerVisibleProjects(
+                currentUserId,
+                status,
+                pageable
+        );
         return ProjectListResponse.from(projectPage);
     }
 
@@ -78,7 +83,7 @@ public class ProjectServiceImpl implements ProjectService {
                 .orElseThrow(() -> new CustomException(ErrorCode.PROJECT_NOT_FOUND));
 
         if (!project.isOwnedBy(currentUserId)
-                && !(freelancerAccess && project.isRequestedStatus())) {
+                && !(freelancerAccess && canFreelancerAccessProject(currentUserId, project))) {
             throw new CustomException(ErrorCode.PROJECT_ACCESS_DENIED);
         }
 
@@ -183,6 +188,15 @@ public class ProjectServiceImpl implements ProjectService {
     private Proposal getAcceptedProposal(Long projectId) {
         return proposalRepository.findAcceptedProposalByProjectId(projectId)
                 .orElseThrow(() -> new CustomException(ErrorCode.PROPOSAL_NOT_FOUND));
+    }
+
+    private boolean canFreelancerAccessProject(Long currentUserId, Project project) {
+        return project.isRequestedStatus()
+                || proposalRepository.existsAcceptedProposalByProjectIdAndFreelancerUserId(
+                        project.getId(),
+                        currentUserId,
+                        ProposalStatus.ACCEPTED
+                );
     }
 
     private void validateAssignedFreelancer(Long currentUserId, boolean adminOverride, Proposal acceptedProposal) {

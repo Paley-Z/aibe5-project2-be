@@ -3,6 +3,7 @@ package com.ieum.ansimdonghaeng.domain.proposal.controller;
 import com.ieum.ansimdonghaeng.common.response.ApiResponse;
 import com.ieum.ansimdonghaeng.common.security.AuthenticatedUserSupport;
 import com.ieum.ansimdonghaeng.common.security.CustomUserDetails;
+import com.ieum.ansimdonghaeng.domain.project.entity.ProjectStatus;
 import com.ieum.ansimdonghaeng.domain.proposal.dto.response.ProposalDetailResponse;
 import com.ieum.ansimdonghaeng.domain.proposal.dto.response.ProposalListResponse;
 import com.ieum.ansimdonghaeng.domain.proposal.entity.ProposalStatus;
@@ -37,12 +38,14 @@ public class FreelancerProposalController {
     public ResponseEntity<ApiResponse<ProposalListResponse>> getMyProposals(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestParam(required = false) ProposalStatus status,
+            @RequestParam(required = false) ProjectStatus projectStatus,
             @PositiveOrZero @RequestParam(defaultValue = "0") int page,
             @Positive @RequestParam(defaultValue = "10") int size
     ) {
         ProposalListResponse response = proposalService.getMyProposals(
                 AuthenticatedUserSupport.currentUserId(userDetails),
                 status,
+                projectStatus,
                 page,
                 size
         );

@@ -164,6 +164,50 @@ class ProposalControllerIntegrationTest {
     }
 
     @Test
+    @DisplayName("freelancer can list own proposals with project status filter")
+    void getMyProposalsWithProjectStatusFilter() throws Exception {
+        User owner = userRepository.save(createUser("owner-project-filter@test.com", "owner", "ROLE_USER"));
+        User freelancerUser = userRepository.save(createUser(
+                "freelancer-project-filter@test.com",
+                "freelancer",
+                "ROLE_FREELANCER"
+        ));
+        FreelancerProfile freelancerProfile = freelancerProfileRepository.save(createProfile(freelancerUser, true));
+        Project completedProject = projectRepository.save(createProject(owner));
+        Project acceptedProject = projectRepository.save(createProject(owner));
+        Proposal completedProposal = proposalRepository.saveAndFlush(Proposal.create(
+                completedProject,
+                freelancerProfile,
+                "completed"
+        ));
+        Proposal acceptedProposal = proposalRepository.saveAndFlush(Proposal.create(
+                acceptedProject,
+                freelancerProfile,
+                "accepted"
+        ));
+        LocalDateTime respondedAt = LocalDateTime.of(2026, 4, 15, 10, 0);
+        completedProposal.accept(respondedAt);
+        acceptedProposal.accept(respondedAt);
+        completedProject.accept(respondedAt);
+        completedProject.start(respondedAt.plusHours(1));
+        completedProject.complete(respondedAt.plusHours(2));
+        acceptedProject.accept(respondedAt);
+        proposalRepository.saveAllAndFlush(List.of(completedProposal, acceptedProposal));
+        projectRepository.saveAllAndFlush(List.of(completedProject, acceptedProject));
+
+        mockMvc.perform(get("/api/v1/freelancers/me/proposals")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(freelancerUser))
+                        .param("status", "ACCEPTED")
+                        .param("projectStatus", "COMPLETED"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.totalElements").value(1))
+                .andExpect(jsonPath("$.data.content[0].proposalId").value(completedProposal.getId()))
+                .andExpect(jsonPath("$.data.content[0].proposalStatus").value("ACCEPTED"))
+                .andExpect(jsonPath("$.data.content[0].projectStatus").value("COMPLETED"));
+    }
+
+    @Test
     @DisplayName("other freelancer cannot access proposal detail")
     void getMyProposalFailsForOtherFreelancer() throws Exception {
         User owner = userRepository.save(createUser("owner-detail@test.com", "owner", "ROLE_USER"));
