@@ -10,14 +10,21 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ieum.ansimdonghaeng.common.security.CustomUserDetails;
+import com.ieum.ansimdonghaeng.domain.freelancer.entity.FreelancerProfile;
+import com.ieum.ansimdonghaeng.domain.freelancer.repository.FreelancerProfileRepository;
 import com.ieum.ansimdonghaeng.domain.project.entity.Project;
 import com.ieum.ansimdonghaeng.domain.project.entity.ProjectStatus;
 import com.ieum.ansimdonghaeng.domain.project.repository.ProjectRepository;
+import com.ieum.ansimdonghaeng.domain.proposal.entity.Proposal;
 import com.ieum.ansimdonghaeng.domain.proposal.repository.ProposalRepository;
+import com.ieum.ansimdonghaeng.domain.user.entity.User;
 import com.ieum.ansimdonghaeng.domain.user.entity.UserRole;
+import com.ieum.ansimdonghaeng.domain.user.repository.UserRepository;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,11 +54,19 @@ class ProjectControllerIntegrationTest {
     @Autowired
     private ProposalRepository proposalRepository;
 
+    @Autowired
+    private FreelancerProfileRepository freelancerProfileRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
     @AfterEach
     void tearDown() {
         // 제안이 프로젝트를 참조하므로 자식 테이블부터 정리한다.
         proposalRepository.deleteAll();
         projectRepository.deleteAll();
+        freelancerProfileRepository.deleteAll();
+        userRepository.deleteAll();
     }
 
     @Test
@@ -163,6 +178,36 @@ class ProjectControllerIntegrationTest {
     }
 
     @Test
+    void listFreelancerProjectsWithStatusFilterShowsOnlyAssignedProjects() throws Exception {
+        User freelancerUser = userRepository.save(createUser(
+                "freelancer-project-list@test.com",
+                "freelancer",
+                UserRole.FREELANCER
+        ));
+        User otherFreelancerUser = userRepository.save(createUser(
+                "other-freelancer-project-list@test.com",
+                "other-freelancer",
+                UserRole.FREELANCER
+        ));
+        FreelancerProfile freelancerProfile = freelancerProfileRepository.save(createProfile(freelancerUser));
+        FreelancerProfile otherFreelancerProfile = freelancerProfileRepository.save(createProfile(otherFreelancerUser));
+        Project assignedAccepted = persistProject(1L, "assigned accepted project", ProjectStatus.ACCEPTED);
+        Project otherAccepted = persistProject(2L, "other accepted project", ProjectStatus.ACCEPTED);
+        persistProject(3L, "requested project", ProjectStatus.REQUESTED);
+        saveAcceptedProposal(assignedAccepted, freelancerProfile);
+        saveAcceptedProposal(otherAccepted, otherFreelancerProfile);
+
+        mockMvc.perform(get("/api/v1/projects")
+                        .with(authenticatedFreelancer(freelancerUser.getId()))
+                        .param("status", "ACCEPTED"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.totalElements").value(1))
+                .andExpect(jsonPath("$.data.content[0].projectId").value(assignedAccepted.getId()))
+                .andExpect(jsonPath("$.data.content[0].status").value("ACCEPTED"));
+    }
+
+    @Test
     void listRecruitingProjectsRejectsRequesterRole() throws Exception {
         mockMvc.perform(get("/api/v1/projects")
                         .with(authenticatedUser(1L)))
@@ -194,6 +239,25 @@ class ProjectControllerIntegrationTest {
                 .andExpect(jsonPath("$.data.projectId").value(project.getId()))
                 .andExpect(jsonPath("$.data.ownerUserId").value(1))
                 .andExpect(jsonPath("$.data.status").value("REQUESTED"));
+    }
+
+    @Test
+    void getProjectForAssignedFreelancerSuccessWhenAccepted() throws Exception {
+        User freelancerUser = userRepository.save(createUser(
+                "freelancer-project-detail@test.com",
+                "freelancer",
+                UserRole.FREELANCER
+        ));
+        FreelancerProfile freelancerProfile = freelancerProfileRepository.save(createProfile(freelancerUser));
+        Project project = persistProject(1L, "assigned accepted project detail", ProjectStatus.ACCEPTED);
+        saveAcceptedProposal(project, freelancerProfile);
+
+        mockMvc.perform(get("/api/v1/projects/{projectId}", project.getId())
+                        .with(authenticatedFreelancer(freelancerUser.getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.projectId").value(project.getId()))
+                .andExpect(jsonPath("$.data.status").value("ACCEPTED"));
     }
 
     @Test
@@ -338,6 +402,39 @@ class ProjectControllerIntegrationTest {
         }
 
         return projectRepository.saveAndFlush(savedProject);
+    }
+
+    private Proposal saveAcceptedProposal(Project project, FreelancerProfile freelancerProfile) {
+        Proposal proposal = Proposal.create(project, freelancerProfile, "accepted proposal");
+        proposal.accept(LocalDateTime.of(2026, 4, 1, 11, 0));
+        return proposalRepository.saveAndFlush(proposal);
+    }
+
+    private User createUser(String email, String name, UserRole role) {
+        return User.builder()
+                .email(email)
+                .passwordHash("{noop}password")
+                .name(name)
+                .phone("010-0000-0000")
+                .intro("intro")
+                .roleCode(role.getCode())
+                .activeYn(true)
+                .build();
+    }
+
+    private FreelancerProfile createProfile(User user) {
+        return FreelancerProfile.create(
+                user,
+                "career description",
+                true,
+                true,
+                new BigDecimal("4.50"),
+                8L,
+                true,
+                Set.of("SEOUL_GANGNAM"),
+                Set.of("MORNING"),
+                Set.of("HOSPITAL_COMPANION")
+        );
     }
 
     private RequestPostProcessor authenticatedUser(Long userId) {

@@ -15,7 +15,7 @@ public interface ProjectService {
 
     ProjectListResponse getMyProjects(Long currentUserId, ProjectStatus status, int page, int size);
 
-    ProjectListResponse getRecruitingProjects(int page, int size);
+    ProjectListResponse getFreelancerProjects(Long currentUserId, ProjectStatus status, int page, int size);
 
     ProjectDetailResponse getProject(Long currentUserId, boolean freelancerAccess, Long projectId);
 

@@ -42,6 +42,17 @@ public interface ProposalRepository extends JpaRepository<Proposal, Long>, Propo
     long countCompletedAcceptedProjectsByFreelancerProfileId(@Param("freelancerProfileId") Long freelancerProfileId);
 
     @Query("""
+            select case when count(proposal) > 0 then true else false end
+            from Proposal proposal
+            where proposal.project.id = :projectId
+              and proposal.freelancerProfile.user.id = :freelancerUserId
+              and proposal.status = :status
+            """)
+    boolean existsAcceptedProposalByProjectIdAndFreelancerUserId(@Param("projectId") Long projectId,
+                                                                 @Param("freelancerUserId") Long freelancerUserId,
+                                                                 @Param("status") ProposalStatus status);
+
+    @Query("""
             select proposal
             from Proposal proposal
             join fetch proposal.project project
