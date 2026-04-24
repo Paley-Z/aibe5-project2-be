@@ -4,6 +4,7 @@ import com.ieum.ansimdonghaeng.common.config.FileStorageProperties;
 import com.ieum.ansimdonghaeng.common.exception.CustomException;
 import com.ieum.ansimdonghaeng.common.exception.ErrorCode;
 import java.io.IOException;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
@@ -89,7 +90,13 @@ public class FreelancerFileStorageService {
             return;
         }
 
-        Path targetPath = Path.of(storagePath).toAbsolutePath().normalize();
+        Path targetPath;
+        try {
+            targetPath = Path.of(storagePath).toAbsolutePath().normalize();
+        } catch (InvalidPathException exception) {
+            return;
+        }
+
         if (!targetPath.startsWith(baseDirectory)) {
             return;
         }

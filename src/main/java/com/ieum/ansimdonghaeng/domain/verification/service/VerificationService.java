@@ -104,7 +104,7 @@ public class VerificationService {
         if (!file.isOwnedBy(currentUserId)) {
             throw new CustomException(ErrorCode.FILE_NOT_FOUND);
         }
-        validatePendingVerification(file.getVerification());
+        validateFileMutableVerification(file.getVerification());
 
         verificationFileRepository.delete(file);
         fileStorageService.delete(file.getFileUrl());
@@ -123,12 +123,13 @@ public class VerificationService {
 
     private Verification getMutableOwnedVerification(Long currentUserId, Long verificationId) {
         Verification verification = getOwnedVerification(currentUserId, verificationId);
-        validatePendingVerification(verification);
+        validateFileMutableVerification(verification);
         return verification;
     }
 
-    private void validatePendingVerification(Verification verification) {
-        if (!verification.isPending()) {
+    private void validateFileMutableVerification(Verification verification) {
+        if (verification.getStatus() != VerificationStatus.PENDING
+                && verification.getStatus() != VerificationStatus.APPROVED) {
             throw new CustomException(ErrorCode.VERIFICATION_INVALID_STATUS);
         }
     }

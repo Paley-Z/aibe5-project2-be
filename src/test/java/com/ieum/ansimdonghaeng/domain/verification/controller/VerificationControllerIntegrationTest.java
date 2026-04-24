@@ -49,7 +49,7 @@ class VerificationControllerIntegrationTest extends AdminIntegrationTestSupport 
     }
 
     @Test
-    void approvedVerificationRejectsFileUpload() throws Exception {
+    void approvedVerificationAllowsFileUpload() throws Exception {
         User freelancerUser = saveUser("freelancer@test.com", "freelancer", UserRole.FREELANCER);
         User adminUser = saveUser("admin@test.com", "admin", UserRole.ADMIN);
         var freelancerProfile = saveFreelancerProfile(freelancerUser, true, true);
@@ -65,8 +65,8 @@ class VerificationControllerIntegrationTest extends AdminIntegrationTestSupport 
         mockMvc.perform(multipart("/api/v1/freelancers/me/verifications/{verificationId}/files", verification.getId())
                         .file(verificationFile)
                         .with(freelancerPrincipal(freelancerUser)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.code").value("VERIFICATION_400_1"));
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.verificationId").value(verification.getId()));
     }
 
     @Test
@@ -91,7 +91,7 @@ class VerificationControllerIntegrationTest extends AdminIntegrationTestSupport 
     }
 
     @Test
-    void approvedVerificationRejectsFileDeletion() throws Exception {
+    void approvedVerificationAllowsFileDeletion() throws Exception {
         User freelancerUser = saveUser("freelancer@test.com", "freelancer", UserRole.FREELANCER);
         User adminUser = saveUser("admin@test.com", "admin", UserRole.ADMIN);
         var freelancerProfile = saveFreelancerProfile(freelancerUser, true, true);
@@ -100,10 +100,9 @@ class VerificationControllerIntegrationTest extends AdminIntegrationTestSupport 
 
         mockMvc.perform(delete("/api/v1/freelancers/me/verifications/files/{fileId}", file.getId())
                         .with(freelancerPrincipal(freelancerUser)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.code").value("VERIFICATION_400_1"));
+                .andExpect(status().isOk());
 
-        org.assertj.core.api.Assertions.assertThat(verificationFileRepository.existsById(file.getId())).isTrue();
+        org.assertj.core.api.Assertions.assertThat(verificationFileRepository.existsById(file.getId())).isFalse();
     }
 
     @Test
