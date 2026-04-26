@@ -10,7 +10,9 @@ import com.ieum.ansimdonghaeng.domain.notification.entity.Notification;
 import com.ieum.ansimdonghaeng.domain.notification.repository.NotificationRepository;
 import com.ieum.ansimdonghaeng.domain.project.entity.Project;
 import com.ieum.ansimdonghaeng.domain.proposal.entity.Proposal;
+import com.ieum.ansimdonghaeng.domain.report.entity.Report;
 import com.ieum.ansimdonghaeng.domain.user.entity.User;
+import com.ieum.ansimdonghaeng.domain.user.entity.UserRole;
 import com.ieum.ansimdonghaeng.domain.user.repository.UserRepository;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -143,6 +145,24 @@ public class NotificationService {
                 "리뷰를 남겨주세요.",
                 project.getTitle() + " 프로젝트가 완료되었습니다. 요청자 리뷰를 작성할 수 있습니다."
         ));
+    }
+
+    @Transactional
+    public void notifyReviewReported(Report report) {
+        List<User> admins = userRepository.findAllByRoleCodeAndActiveYnTrue(UserRole.ADMIN.getCode());
+        if (admins.isEmpty()) {
+            return;
+        }
+
+        String projectTitle = report.getReview().getProject().getTitle();
+        String title = "A review has been reported.";
+        String content = "Review #" + report.getReview().getId()
+                + " on project \"" + projectTitle + "\" was reported for "
+                + report.getReasonType().name() + ".";
+
+        notificationRepository.saveAll(admins.stream()
+                .map(admin -> Notification.reviewReported(admin, report, title, content))
+                .toList());
     }
 
     @Transactional

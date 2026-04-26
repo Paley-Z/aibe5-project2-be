@@ -3,6 +3,7 @@ package com.ieum.ansimdonghaeng.domain.report.service;
 import com.ieum.ansimdonghaeng.common.response.PageResponse;
 import com.ieum.ansimdonghaeng.common.exception.CustomException;
 import com.ieum.ansimdonghaeng.common.exception.ErrorCode;
+import com.ieum.ansimdonghaeng.domain.notification.service.NotificationService;
 import com.ieum.ansimdonghaeng.domain.report.dto.request.ReportCreateRequest;
 import com.ieum.ansimdonghaeng.domain.report.dto.response.ReportCreateResponse;
 import com.ieum.ansimdonghaeng.domain.report.dto.response.ReportSummaryResponse;
@@ -27,6 +28,7 @@ public class ReportServiceImpl implements ReportService {
     private final ReportRepository reportRepository;
     private final ReviewRepository reviewRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -40,6 +42,7 @@ public class ReportServiceImpl implements ReportService {
         }
 
         Report report = reportRepository.save(Report.create(review, reporter, request.reasonType(), request.reasonDetail()));
+        notificationService.notifyReviewReported(report);
         return ReportCreateResponse.from(report);
     }
 

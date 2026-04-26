@@ -3,6 +3,7 @@ package com.ieum.ansimdonghaeng.domain.notification.entity;
 import com.ieum.ansimdonghaeng.domain.notice.entity.Notice;
 import com.ieum.ansimdonghaeng.domain.project.entity.Project;
 import com.ieum.ansimdonghaeng.domain.proposal.entity.Proposal;
+import com.ieum.ansimdonghaeng.domain.report.entity.Report;
 import com.ieum.ansimdonghaeng.domain.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -180,6 +181,20 @@ public class Notification {
                 project.getId(),
                 null,
                 null,
+                null,
+                null
+        );
+    }
+
+    public static Notification reviewReported(User user, Report report, String title, String content) {
+        return create(
+                user,
+                NotificationType.REVIEW_REPORTED,
+                title,
+                content,
+                report.getReview().getProject().getId(),
+                null,
+                report.getReview().getId(),
                 null,
                 null
         );
