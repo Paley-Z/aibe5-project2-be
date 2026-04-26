@@ -84,6 +84,10 @@ class NotificationControllerIntegrationTest extends AdminIntegrationTestSupport 
                 .andExpect(jsonPath("$.data.notificationId").value(notification.getId()))
                 .andExpect(jsonPath("$.data.isRead").value(true));
 
+        mockMvc.perform(get("/api/v1/notifications").with(userPrincipal(user)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.unreadCount").value(1));
+
         mockMvc.perform(get("/api/v1/notifications")
                         .param("isRead", "true")
                         .with(userPrincipal(user)))
@@ -95,6 +99,10 @@ class NotificationControllerIntegrationTest extends AdminIntegrationTestSupport 
         mockMvc.perform(patch("/api/v1/notifications/read-all").with(userPrincipal(user)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.readCount").value(1));
+
+        mockMvc.perform(get("/api/v1/notifications").with(userPrincipal(user)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.unreadCount").value(0));
     }
 
     @Test
