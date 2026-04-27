@@ -1,8 +1,7 @@
-# 안심동행 Backend
+# 안심동행 - 이음 Backend
 
-안심동행 백엔드 저장소입니다. Spring Boot 기반 REST API 서버로, 사용자 인증, 프리랜서 프로필, 프로젝트 요청, 제안/매칭, 리뷰/신고, 인증 심사, 공지, 알림, 채팅, 파일 저장 기능을 제공합니다.
+안심동행 - 이음 백엔드 저장소입니다. Spring Boot 기반 REST API 서버로, 사용자 인증, 프리랜서 프로필, 프로젝트 요청, 제안/매칭, 리뷰/신고, 인증 심사, 공지, 알림, 채팅, 파일 저장 기능을 제공합니다.
 
-- Backend Repository: [AIBE5_Project2_Team4_BE](https://github.com/prgrms-aibe-devcourse/AIBE5_Project2_Team4_BE)
 - Frontend Repository: [AIBE5_Project2_Team4_FE](https://github.com/prgrms-aibe-devcourse/AIBE5_Project2_Team4_FE)
 - 기본 서버 포트: `8080`
 - Swagger UI: `http://localhost:8080/swagger-ui/index.html`
