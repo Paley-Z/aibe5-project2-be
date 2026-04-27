@@ -2,6 +2,7 @@ package com.ieum.ansimdonghaeng.domain.project.repository;
 
 import static com.ieum.ansimdonghaeng.domain.project.entity.QProject.project;
 import static com.ieum.ansimdonghaeng.domain.proposal.entity.QProposal.proposal;
+import static com.ieum.ansimdonghaeng.domain.user.entity.QUser.user;
 
 import com.ieum.ansimdonghaeng.domain.project.entity.ProjectStatus;
 import com.ieum.ansimdonghaeng.domain.proposal.entity.ProposalStatus;
@@ -31,6 +32,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         ProjectSummaryView.class,
                         project.id,
                         project.title,
+                        user.name,
                         project.projectTypeCode,
                         project.serviceRegionCode,
                         project.requestedStartAt,
@@ -40,6 +42,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         project.updatedAt
                 ))
                 .from(project)
+                .leftJoin(user).on(user.id.eq(project.ownerUserId))
                 .where(project.ownerUserId.eq(ownerUserId), statusCondition)
                 .orderBy(project.createdAt.desc(), project.id.desc())
                 .offset(pageable.getOffset())
@@ -66,6 +69,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         ProjectSummaryView.class,
                         project.id,
                         project.title,
+                        user.name,
                         project.projectTypeCode,
                         project.serviceRegionCode,
                         project.requestedStartAt,
@@ -75,6 +79,7 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                         project.updatedAt
                 ))
                 .from(project)
+                .leftJoin(user).on(user.id.eq(project.ownerUserId))
                 .where(visibilityCondition)
                 .orderBy(project.createdAt.desc(), project.id.desc())
                 .offset(pageable.getOffset())

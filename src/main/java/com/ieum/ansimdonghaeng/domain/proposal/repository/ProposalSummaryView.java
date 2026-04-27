@@ -9,6 +9,7 @@ public record ProposalSummaryView(
         Long projectId,
         String projectTitle,
         Long ownerUserId,
+        String ownerName,
         ProposalStatus proposalStatus,
         ProjectStatus projectStatus,
         String message,

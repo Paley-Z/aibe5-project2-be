@@ -160,6 +160,7 @@ class ProposalControllerIntegrationTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.totalElements").value(1))
                 .andExpect(jsonPath("$.data.content[0].proposalId").value(pendingProposal.getId()))
+                .andExpect(jsonPath("$.data.content[0].ownerName").value("owner"))
                 .andExpect(jsonPath("$.data.content[0].proposalStatus").value("PENDING"));
     }
 
@@ -203,6 +204,7 @@ class ProposalControllerIntegrationTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.totalElements").value(1))
                 .andExpect(jsonPath("$.data.content[0].proposalId").value(completedProposal.getId()))
+                .andExpect(jsonPath("$.data.content[0].ownerName").value("owner"))
                 .andExpect(jsonPath("$.data.content[0].proposalStatus").value("ACCEPTED"))
                 .andExpect(jsonPath("$.data.content[0].projectStatus").value("COMPLETED"));
     }
@@ -242,6 +244,7 @@ class ProposalControllerIntegrationTest {
                         .header(HttpHeaders.AUTHORIZATION, bearerToken(freelancerUser)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.ownerName").value("owner"))
                 .andExpect(jsonPath("$.data.proposalStatus").value("ACCEPTED"))
                 .andExpect(jsonPath("$.data.projectStatus").value("ACCEPTED"))
                 .andExpect(jsonPath("$.data.projectAcceptedAt").exists());
@@ -305,6 +308,7 @@ class ProposalControllerIntegrationTest {
                         .header(HttpHeaders.AUTHORIZATION, bearerToken(freelancerUser)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.ownerName").value("owner"))
                 .andExpect(jsonPath("$.data.proposalStatus").value("REJECTED"))
                 .andExpect(jsonPath("$.data.projectStatus").value("REQUESTED"))
                 .andExpect(jsonPath("$.data.respondedAt").exists());
