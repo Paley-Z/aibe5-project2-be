@@ -38,6 +38,7 @@ public class ProposalQueryRepositoryImpl implements ProposalQueryRepository {
                         project.id,
                         project.title,
                         project.ownerUserId,
+                        user.name,
                         proposal.status,
                         project.status,
                         proposal.message,
@@ -47,6 +48,7 @@ public class ProposalQueryRepositoryImpl implements ProposalQueryRepository {
                 ))
                 .from(proposal)
                 .join(proposal.project, project)
+                .leftJoin(user).on(user.id.eq(project.ownerUserId))
                 .where(proposal.freelancerProfile.id.eq(freelancerProfileId), statusCondition, projectStatusCondition)
                 .orderBy(proposal.createdAt.desc(), proposal.id.desc())
                 .offset(pageable.getOffset())

@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 public record ProjectDetailResponse(
         Long projectId,
         Long ownerUserId,
+        String ownerName,
         String title,
         String projectTypeCode,
         String serviceRegionCode,
@@ -28,9 +29,15 @@ public record ProjectDetailResponse(
 
     // 엔티티를 상세 응답 DTO로 변환한다.
     public static ProjectDetailResponse from(Project project) {
+        String ownerName = project.getOwnerUser() == null ? null : project.getOwnerUser().getName();
+        return from(project, ownerName);
+    }
+
+    public static ProjectDetailResponse from(Project project, String ownerName) {
         return new ProjectDetailResponse(
                 project.getId(),
                 project.getOwnerUserId(),
+                ownerName,
                 project.getTitle(),
                 project.getProjectTypeCode(),
                 project.getServiceRegionCode(),

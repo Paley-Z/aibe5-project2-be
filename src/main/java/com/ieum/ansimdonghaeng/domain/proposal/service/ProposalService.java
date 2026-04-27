@@ -20,6 +20,7 @@ import com.ieum.ansimdonghaeng.domain.proposal.repository.ProjectProposalSummary
 import com.ieum.ansimdonghaeng.domain.proposal.repository.ProposalRepository;
 import com.ieum.ansimdonghaeng.domain.proposal.repository.ProposalSummaryView;
 import com.ieum.ansimdonghaeng.domain.user.entity.UserRole;
+import com.ieum.ansimdonghaeng.domain.user.repository.UserRepository;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +39,7 @@ public class ProposalService {
     private final ProposalRepository proposalRepository;
     private final FreelancerProfileRepository freelancerProfileRepository;
     private final NotificationService notificationService;
+    private final UserRepository userRepository;
 
     @Transactional
     public ProposalCreateResponse createProposal(Long currentUserId, Long projectId, ProposalCreateRequest request) {
@@ -94,7 +96,7 @@ public class ProposalService {
                 .orElseThrow(() -> new CustomException(ErrorCode.PROPOSAL_NOT_FOUND));
 
         validateProposalOwnership(proposal, currentFreelancerProfile.getId());
-        return ProposalDetailResponse.from(proposal);
+        return toDetailResponse(proposal);
     }
 
     @Transactional
@@ -126,7 +128,7 @@ public class ProposalService {
         notificationService.notifyProposalAccepted(proposal);
         notificationService.notifyProjectStatusChanged(project, proposal);
 
-        return ProposalDetailResponse.from(proposal);
+        return toDetailResponse(proposal);
     }
 
     @Transactional
@@ -141,7 +143,7 @@ public class ProposalService {
         }
 
         proposal.reject(LocalDateTime.now());
-        return ProposalDetailResponse.from(proposal);
+        return toDetailResponse(proposal);
     }
 
     private Project getOwnedProject(Long projectId, Long currentUserId) {
@@ -182,6 +184,13 @@ public class ProposalService {
         if (!proposal.isOwnedByFreelancerProfile(freelancerProfileId)) {
             throw new CustomException(ErrorCode.PROPOSAL_ACCESS_DENIED);
         }
+    }
+
+    private ProposalDetailResponse toDetailResponse(Proposal proposal) {
+        String ownerName = userRepository.findById(proposal.getProject().getOwnerUserId())
+                .map(user -> user.getName())
+                .orElse(null);
+        return ProposalDetailResponse.from(proposal, ownerName);
     }
 
     private void validateRequestedProject(Project project) {

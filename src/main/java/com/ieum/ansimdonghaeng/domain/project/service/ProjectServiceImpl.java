@@ -19,6 +19,7 @@ import com.ieum.ansimdonghaeng.domain.project.repository.ProjectSummaryView;
 import com.ieum.ansimdonghaeng.domain.proposal.entity.Proposal;
 import com.ieum.ansimdonghaeng.domain.proposal.entity.ProposalStatus;
 import com.ieum.ansimdonghaeng.domain.proposal.repository.ProposalRepository;
+import com.ieum.ansimdonghaeng.domain.user.repository.UserRepository;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -37,6 +38,7 @@ public class ProjectServiceImpl implements ProjectService {
     private final ProposalRepository proposalRepository;
     private final NotificationService notificationService;
     private final FreelancerStatsService freelancerStatsService;
+    private final UserRepository userRepository;
 
     @Override
     @Transactional
@@ -87,7 +89,7 @@ public class ProjectServiceImpl implements ProjectService {
             throw new CustomException(ErrorCode.PROJECT_ACCESS_DENIED);
         }
 
-        return ProjectDetailResponse.from(project);
+        return toDetailResponse(project);
     }
 
     @Override
@@ -125,7 +127,7 @@ public class ProjectServiceImpl implements ProjectService {
                 request.requestDetail() != null ? request.requestDetail() : project.getRequestDetail()
         );
 
-        return ProjectDetailResponse.from(project);
+        return toDetailResponse(project);
     }
 
     @Override
@@ -152,7 +154,7 @@ public class ProjectServiceImpl implements ProjectService {
 
         project.start(LocalDateTime.now());
         notificationService.notifyProjectStatusChanged(project, acceptedProposal);
-        return ProjectDetailResponse.from(project);
+        return toDetailResponse(project);
     }
 
     @Override
@@ -171,7 +173,7 @@ public class ProjectServiceImpl implements ProjectService {
         freelancerStatsService.refreshStats(acceptedProposal.getFreelancerProfile().getId());
         notificationService.notifyProjectStatusChanged(project, acceptedProposal);
         notificationService.notifyReviewRequest(project, acceptedProposal);
-        return ProjectDetailResponse.from(project);
+        return toDetailResponse(project);
     }
 
     private Project getOwnedProject(Long projectId, Long currentUserId) {
@@ -188,6 +190,13 @@ public class ProjectServiceImpl implements ProjectService {
     private Proposal getAcceptedProposal(Long projectId) {
         return proposalRepository.findAcceptedProposalByProjectId(projectId)
                 .orElseThrow(() -> new CustomException(ErrorCode.PROPOSAL_NOT_FOUND));
+    }
+
+    private ProjectDetailResponse toDetailResponse(Project project) {
+        String ownerName = userRepository.findById(project.getOwnerUserId())
+                .map(user -> user.getName())
+                .orElse(null);
+        return ProjectDetailResponse.from(project, ownerName);
     }
 
     private boolean canFreelancerAccessProject(Long currentUserId, Project project) {

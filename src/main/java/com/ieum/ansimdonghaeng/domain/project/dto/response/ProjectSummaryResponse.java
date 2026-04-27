@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 public record ProjectSummaryResponse(
         Long projectId,
         String title,
+        String ownerName,
         String projectTypeCode,
         String serviceRegionCode,
         LocalDateTime requestedStartAt,
@@ -22,6 +23,7 @@ public record ProjectSummaryResponse(
         return new ProjectSummaryResponse(
                 project.projectId(),
                 project.title(),
+                project.ownerName(),
                 project.projectTypeCode(),
                 project.serviceRegionCode(),
                 project.requestedStartAt(),

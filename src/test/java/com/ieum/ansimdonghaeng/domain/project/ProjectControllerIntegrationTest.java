@@ -229,6 +229,28 @@ class ProjectControllerIntegrationTest {
     }
 
     @Test
+    void projectResponsesIncludeOwnerNameWhenOwnerExists() throws Exception {
+        User owner = userRepository.save(createUser(
+                "project-owner-name@test.com",
+                "프로젝트 등록자",
+                UserRole.USER
+        ));
+        Project project = persistProject(owner.getId(), "등록자 이름 프로젝트", ProjectStatus.REQUESTED);
+
+        mockMvc.perform(get("/api/v1/projects/me")
+                        .with(authenticatedUser(owner.getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content[0].projectId").value(project.getId()))
+                .andExpect(jsonPath("$.data.content[0].ownerName").value("프로젝트 등록자"));
+
+        mockMvc.perform(get("/api/v1/projects/{projectId}", project.getId())
+                        .with(authenticatedUser(owner.getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.projectId").value(project.getId()))
+                .andExpect(jsonPath("$.data.ownerName").value("프로젝트 등록자"));
+    }
+
+    @Test
     void getProjectForFreelancerSuccessWhenRequested() throws Exception {
         Project project = persistProject(1L, "recruiting project detail", ProjectStatus.REQUESTED);
 

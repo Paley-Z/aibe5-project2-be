@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 public record ProjectSummaryView(
         Long projectId,
         String title,
+        String ownerName,
         String projectTypeCode,
         String serviceRegionCode,
         LocalDateTime requestedStartAt,
